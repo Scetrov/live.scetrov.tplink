@@ -1,0 +1,24 @@
+{
+  "name": "live.scetrov.tplink",
+  "version": "1.0.0",
+  "description": "Elgato Stream Deck plugin for controlling TP-Link Kasa and Tapo smart plugs",
+  "main": "plugin.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "stream-deck",
+    "elgato",
+    "tplink",
+    "kasa",
+    "tapo",
+    "smart-home"
+  ],
+  "author": "scetrov",
+  "license": "MIT",
+  "dependencies": {
+    "tplink-smarthome-api": "^5.0.0",
+    "tp-link-tapo-connect": "^2.0.8",
+    "ws": "^8.16.0"
+  }
+}

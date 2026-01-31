@@ -1,0 +1,73 @@
+{
+  "Name": "TP-Link Smart Control",
+  "Version": "1.0.0",
+  "Author": "scetrov",
+  "Category": "TP-Link Smart Plugs",
+  "CategoryIcon": "images/plug-toggle@2x",
+  "CodePath": "plugin.js",
+  "Description": "Control TP-Link Kasa and Tapo smart plugs",
+  "Icon": "images/plugin-icon@2x",
+  "URL": "https://github.com/scetrov/tplink-streamdeck",
+  "SDKVersion": 2,
+  "Software": {
+    "MinimumVersion": "6.0"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.15"
+    },
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Nodejs": {
+    "Version": "20",
+    "Debug": "enabled"
+  },
+  "UUID": "live.scetrov.tplink",
+  "Actions": [
+    {
+      "Name": "Toggle Smart Plug",
+      "UUID": "live.scetrov.tplink.toggle",
+      "Icon": "images/plug-toggle@2x",
+      "Tooltip": "Toggle TP-Link smart plug on/off",
+      "PropertyInspectorPath": "property-inspector.html",
+      "States": [
+        {
+          "Image": "images/plug-toggle@2x",
+          "Name": "Off"
+        },
+        {
+          "Image": "images/plug-toggle@2x",
+          "Name": "On"
+        }
+      ]
+    },
+    {
+      "Name": "Turn On Smart Plug",
+      "UUID": "live.scetrov.tplink.on",
+      "Icon": "images/plug-on@2x",
+      "Tooltip": "Turn TP-Link smart plug on",
+      "PropertyInspectorPath": "property-inspector.html",
+      "States": [
+        {
+          "Image": "images/plug-on@2x"
+        }
+      ]
+    },
+    {
+      "Name": "Turn Off Smart Plug",
+      "UUID": "live.scetrov.tplink.off",
+      "Icon": "images/plug-off@2x",
+      "Tooltip": "Turn TP-Link smart plug off",
+      "PropertyInspectorPath": "property-inspector.html",
+      "States": [
+        {
+          "Image": "images/plug-off@2x"
+        }
+      ]
+    }
+  ]
+}
