@@ -69,7 +69,7 @@ class DeviceManager {
       console.log('Cloud login successful');
       
       // Get device list from cloud
-      const deviceList = await this.tapoCloudClient.getDeviceList();
+      const deviceList = await this.tapoCloudClient.listDevicesByType('SMART.TAPOPLUG');
       console.log(`Found ${deviceList.length} Tapo device(s) on account`);
       
       // Format device list
