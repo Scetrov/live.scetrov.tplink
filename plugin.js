@@ -1098,9 +1098,9 @@ async function handleSendToPlugin(context, payload) {
     const username = globalSettings.tapoEmail || null;
     const password = globalSettings.tapoPassword || null;
     
-    // Get custom IP range if provided
-    const startIp = payload.startIp || null;
-    const endIp = payload.endIp || null;
+    // Get custom IP range from payload or global settings
+    const startIp = payload.startIp || globalSettings.startIp || null;
+    const endIp = payload.endIp || globalSettings.endIp || null;
     
     if (startIp && endIp) {
       console.log(`Using custom IP range: ${startIp} - ${endIp}`);
@@ -1196,6 +1196,13 @@ async function handleSendToPlugin(context, payload) {
       tapoEmail: globalSettings.tapoEmail || '',
       tapoPassword: globalSettings.tapoPassword || ''
     });
+  } else if (payload.action === 'getGlobalIpRange') {
+    // Send global IP range to Property Inspector
+    deviceManager.sendToPropertyInspector(context, {
+      action: 'globalIpRangeRetrieved',
+      startIp: globalSettings.startIp || '',
+      endIp: globalSettings.endIp || ''
+    });
   } else if (payload.action === 'saveCredentials') {
     // Save credentials to global settings
     setGlobalSettings({
@@ -1209,7 +1216,22 @@ async function handleSendToPlugin(context, payload) {
       tapoEmail: '',
       tapoPassword: ''
     });
-    console.log('Credentials cleared from global settings');
+        console.log('Credentials cleared from global settings');
+  } else if (payload.action === 'saveIpRange') {
+    // Save IP range to global settings
+    setGlobalSettings({
+      startIp: payload.startIp || '',
+      endIp: payload.endIp || ''
+    });
+    console.log(`IP range saved to global settings: ${payload.startIp} - ${payload.endIp}`);
+  } else if (payload.action === 'getDeviceStatus') {
+  } else if (payload.action === 'saveIpRange') {
+    // Save IP range to global settings
+    setGlobalSettings({
+      startIp: payload.startIp || '',
+      endIp: payload.endIp || ''
+    });
+    console.log(`IP range saved to global settings: ${payload.startIp} - ${payload.endIp}`);
   } else if (payload.action === 'getDeviceStatus') {
     // Get current device status
     console.log(`Getting status for device at ${payload.ip}`);

@@ -603,23 +603,11 @@
         ipInput.value = settings.ip;
       }
 
-      // Load custom IP range
-      const startIpInput = document.getElementById('startIp');
-      const endIpInput = document.getElementById('endIp');
-      if (settings.startIp) {
-        startIpInput.value = settings.startIp;
-      }
-      if (settings.endIp) {
-        endIpInput.value = settings.endIp;
-      }
-      
-      // Update IP range info if both are set
-      if (settings.startIp && settings.endIp) {
-        updateIpRangeInfo();
-      }
-
       // Request global credentials
       requestGlobalCredentials();
+      
+      // Request global IP range (stored globally like credentials)
+      requestGlobalIpRange();
       
       // Request saved discovered devices
       requestSavedDevices();
@@ -633,6 +621,13 @@
      */
     function requestGlobalCredentials() {
       sendToPlugin({ action: 'getGlobalCredentials' });
+    }
+
+    /**
+     * Request global IP range from plugin
+     */
+    function requestGlobalIpRange() {
+      sendToPlugin({ action: 'getGlobalIpRange' });
     }
 
     /**
@@ -667,6 +662,8 @@
         displayAllDiscoveredDevices(payload);
       } else if (payload.action === 'globalCredentialsRetrieved') {
         loadGlobalCredentials(payload);
+      } else if (payload.action === 'globalIpRangeRetrieved') {
+        loadGlobalIpRange(payload);
       } else if (payload.action === 'savedDevicesRetrieved') {
         loadSavedDevices(payload);
       } else if (payload.action === 'deviceStatusRetrieved') {
@@ -684,6 +681,26 @@
       } else {
         isSignedIn = false;
         updateAuthButton();
+      }
+    }
+
+    /**
+     * Load global IP range and update inputs
+     */
+    function loadGlobalIpRange(payload) {
+      const startIpInput = document.getElementById('startIp');
+      const endIpInput = document.getElementById('endIp');
+      
+      if (payload.startIp) {
+        startIpInput.value = payload.startIp;
+      }
+      if (payload.endIp) {
+        endIpInput.value = payload.endIp;
+      }
+      
+      // Update IP range info if both are set
+      if (payload.startIp && payload.endIp) {
+        updateIpRangeInfo();
       }
     }
 
@@ -1087,13 +1104,21 @@
 
       // IP range inputs
       document.getElementById('startIp').addEventListener('input', function(e) {
-        settings.startIp = e.target.value;
-        saveSettings();
+        // Save to global settings (shared across all buttons)
+        sendToPlugin({
+          action: 'saveIpRange',
+          startIp: e.target.value,
+          endIp: document.getElementById('endIp').value
+        });
         updateIpRangeInfo();
       });
       document.getElementById('endIp').addEventListener('input', function(e) {
-        settings.endIp = e.target.value;
-        saveSettings();
+        // Save to global settings (shared across all buttons)
+        sendToPlugin({
+          action: 'saveIpRange',
+          startIp: document.getElementById('startIp').value,
+          endIp: e.target.value
+        });
         updateIpRangeInfo();
       });
     });
