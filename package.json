@@ -28,9 +28,9 @@
   }
   ,"devDependencies": {
     "jest": "^29.6.0",
-    "markdownlint-cli2": "^0.39.0"
+    "markdownlint-cli": "^0.32.0"
   }
   ,"scripts": {
-    "lint:md": "markdownlint --fix '**/*.md' || true"
+    "lint:md": "markdownlint --config .markdownlint.json '**/*.md' || true"
   }
 }

@@ -1,0 +1,14 @@
+repos:
+  - repo: local
+    hooks:
+      - id: markdown-lint
+        name: Markdown lint
+        entry: npm run lint:md
+        language: system
+        stages: [commit]
+
+      - id: npm-test
+        name: Run unit tests
+        entry: npm test --silent
+        language: system
+        stages: [commit]
