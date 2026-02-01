@@ -1260,14 +1260,6 @@ async function handleSendToPlugin(context, payload) {
     });
     console.log(`IP range saved to global settings: ${payload.startIp} - ${payload.endIp}`);
   } else if (payload.action === 'getDeviceStatus') {
-  } else if (payload.action === 'saveIpRange') {
-    // Save IP range to global settings
-    setGlobalSettings({
-      startIp: payload.startIp || '',
-      endIp: payload.endIp || ''
-    });
-    console.log(`IP range saved to global settings: ${payload.startIp} - ${payload.endIp}`);
-  } else if (payload.action === 'getDeviceStatus') {
     // Get current device status
     console.log(`Getting status for device at ${payload.ip}`);
     try {
