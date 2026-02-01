@@ -4,11 +4,7 @@
   "description": "Elgato Stream Deck plugin for controlling TP-Link Kasa and Tapo smart plugs",
   "main": "plugin.js",
   "scripts": {
-    "test": "jest --runInBand",
-    "test:legacy": "node tests/test-device-discovery.js",
-    "test:quick": "node tests/test-quick.js",
-    "test:diagnostics": "node tests/test-diagnostics.js",
-    "test:mock": "node tests/test-mock.js"
+    "test": "jest --runInBand"
   },
   "jest": {
     "testEnvironment": "node",
