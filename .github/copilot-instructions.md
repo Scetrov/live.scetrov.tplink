@@ -252,6 +252,117 @@ document.getElementById('tapoEmail').addEventListener('input', function(e) {
 
 **Key Learning**: Maintain single source of truth for credentials in UI. The settings object still uses `username`/`password` keys internally for backward compatibility, but UI presents unified `tapoEmail`/`tapoPassword` fields.
 
+#### 8. Modern UI Redesign (v2.0)
+
+**Problem**: Users found the UI confusing with:
+- Credentials exposed in plain view at the top
+- Two separate scan buttons (Kasa and Unified)
+- Long scrolling device list that was hard to navigate
+- No way to limit scan scope on large networks
+- No real-time device status feedback
+
+**Solution**: Complete UI redesign with modern UX patterns:
+
+**Sign-in/Sign-out Modal**:
+```javascript
+// Modal-based authentication instead of exposed inputs
+<button id="authButton">Sign in to TP-Link</button>
+<div id="authModal" class="modal">
+  <div class="modal-content">
+    <input id="modalEmail" type="text">
+    <input id="modalPassword" type="password">
+    <button id="modalSignIn">Sign In</button>
+  </div>
+</div>
+
+// Dynamic button text based on auth state
+if (isSignedIn) {
+  authButton.innerHTML = 'Sign out from TP-Link <span class="signed-in-badge">Signed In</span>';
+}
+```
+
+**Single Unified Scan Button**:
+- Removed separate Kasa/Tapo scan buttons
+- One "Scan for Devices" button that finds all types
+- Uses globally stored credentials automatically
+- Shows last scan time: "Scan for Devices (Last: 5m 23s ago)"
+
+**Dropdown Device Selection**:
+```javascript
+// Replaced long list with organized dropdown
+<select id="deviceSelect" class="device-dropdown">
+  <optgroup label="Kasa Devices (2)">
+    <option>Device Name - 192.168.1.100</option>
+  </optgroup>
+  <optgroup label="Tapo Devices (3)">
+    <option>Device Name - 192.168.1.101</option>
+    <option>Device Name - Cloud Only</option>
+  </optgroup>
+</select>
+```
+
+**Advanced IP Range Configuration**:
+```javascript
+// Collapsible advanced section
+<button id="advancedButton">Advanced Scan Options</button>
+<div id="advancedSection" class="advanced-section hidden">
+  <input id="startIp" placeholder="192.168.1.1">
+  <input id="endIp" placeholder="192.168.1.254">
+  <div class="ip-range-info">Will scan 254 IP addresses</div>
+</div>
+
+// Live IP count calculation
+function updateIpRangeInfo() {
+  const count = endIp[3] - startIp[3] + 1;
+  infoEl.textContent = `Will scan ${count} IP address${count !== 1 ? 'es' : ''}`;
+}
+```
+
+**Real-time Device Status Display**:
+```javascript
+// Status panel appears after device selection
+<div id="deviceStatus" class="device-status">
+  <div class="status-row">
+    <span class="status-label">Current State:</span>
+    <span class="status-value status-on">ON</span>
+  </div>
+</div>
+
+// Queries device immediately on selection
+sendToPlugin({
+  action: 'getDeviceStatus',
+  ip: settings.ip,
+  deviceType: settings.deviceType
+});
+```
+
+**Persistent Discovery Results**:
+```javascript
+// Save to global settings instead of in-memory cache only
+const allDevices = [
+  ...results.kasa.map(d => ({ ...d, category: 'kasa' })),
+  ...results.tapo.map(d => ({ ...d, category: 'tapo' })),
+  ...results.unverified.map(d => ({ ...d, category: 'unverified' }))
+];
+setGlobalSettings({
+  discoveredDevices: allDevices,
+  discoveryTimestamp: Date.now()
+});
+
+// Load on PI open
+if (globalSettings.discoveredDevices) {
+  discoveredDevices = globalSettings.discoveredDevices;
+  populateDeviceDropdown();
+}
+```
+
+**Key Learning**: 
+- Modal dialogs reduce visual clutter and improve security perception
+- Dropdowns are more scalable than lists for 10+ items
+- Advanced features should be hidden by default (progressive disclosure)
+- Real-time feedback improves user confidence
+- Persistence across sessions reduces repetitive tasks
+
 ### Code Organization Principles
 
 When working on this codebase, follow these patterns:
@@ -494,12 +605,18 @@ for (let i = Math.max(0, base - 15); i <= Math.min(255, base + 15); i++) {
 }
 
 {
-  action: 'cachedDevicesRetrieved',
-  kasa: [],
-  tapo: [],
-  unverified: [],
+  action: 'savedDevicesRetrieved',
+  devices: [{name, type, ip, model, category}],
   cacheAge: 123, // seconds
   success: true
+}
+
+{
+  action: 'deviceStatusRetrieved',
+  success: true,
+  name: 'Living Room Plug',
+  model: 'HS100',
+  state: true // true=on, false=off
 }
 ```
 
@@ -507,17 +624,36 @@ for (let i = Math.max(0, base - 15); i <= Math.min(255, base + 15); i++) {
 ```javascript
 {
   action: 'discoverAllDevices',
-  username: 'user@example.com',
-  password: 'password'
+  startIp: '192.168.1.1', // optional
+  endIp: '192.168.1.254' // optional
 }
 
 {
-  action: 'getCachedDevices'
+  action: 'getSavedDevices'
 }
 
 {
   action: 'getGlobalCredentials'
 }
+
+{
+  action: 'saveCredentials',
+  email: 'user@example.com',
+  password: 'password'
+}
+
+{
+  action: 'clearCredentials'
+}
+
+{
+  action: 'getDeviceStatus',
+  ip: '192.168.1.100',
+  deviceType: 'kasa' | 'tapo',
+  username: 'email', // for Tapo
+  password: 'password' // for Tapo
+}
+```
 ```
 
 ### Performance Considerations

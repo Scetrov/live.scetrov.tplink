@@ -247,31 +247,188 @@
       background-color: #5a4a1a;
       color: #ffc85a;
     }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background-color: #2d2d2d;
+      border: 1px solid #555;
+      border-radius: 8px;
+      padding: 24px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #0e99e0;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .modal-buttons button {
+      flex: 1;
+    }
+
+    .button-secondary {
+      background-color: #555 !important;
+    }
+
+    .button-secondary:hover {
+      background-color: #666 !important;
+    }
+
+    .button-danger {
+      background-color: #d32f2f !important;
+    }
+
+    .button-danger:hover {
+      background-color: #b71c1c !important;
+    }
+
+    /* Dropdown styles */
+    select.device-dropdown {
+      min-height: 40px;
+    }
+
+    /* Advanced section */
+    .advanced-section {
+      margin-top: 12px;
+      padding: 12px;
+      background-color: #3a3a3a;
+      border: 1px solid #555;
+      border-radius: 4px;
+    }
+
+    .advanced-section.hidden {
+      display: none;
+    }
+
+    .ip-range-info {
+      font-size: 11px;
+      color: #0e99e0;
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    .device-status {
+      margin-top: 12px;
+      padding: 12px;
+      background-color: #3a3a3a;
+      border: 1px solid #555;
+      border-radius: 4px;
+    }
+
+    .device-status.hidden {
+      display: none;
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    .status-label {
+      color: #999;
+      font-weight: 500;
+    }
+
+    .status-value {
+      color: #d8d8d8;
+    }
+
+    .status-on {
+      color: #5aff8a;
+      font-weight: 600;
+    }
+
+    .status-off {
+      color: #ff6b6b;
+      font-weight: 600;
+    }
+
+    .signed-in-badge {
+      display: inline-block;
+      background-color: #1a5a2a;
+      color: #5aff8a;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 3px;
+      margin-left: 8px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
   </style>
 </head>
 <body>
   <div class="sdpi-wrapper">
-    <!-- Unified Device Discovery -->
+    <!-- Sign-in/Sign-out Button -->
     <div class="sdpi-item">
-      <label>TP-Link Account (Required for Tapo Only)</label>
-      <input type="text" id="tapoEmail" placeholder="your-tplink@email.com">
-    </div>
-    <div class="sdpi-item">
-      <input type="password" id="tapoPassword" placeholder="Password">
+      <button id="authButton">Sign in to TP-Link</button>
       <div class="info-text">
-        Enter credentials to discover and control Tapo devices. Kasa devices work without login.
+        TP-Link account is required for Tapo devices. Kasa devices work without login.
       </div>
     </div>
     
     <div class="sdpi-item">
-      <button id="scanAllButton">Scan for All TP-Link Devices</button>
+      <button id="scanButton">Scan for Devices</button>
       <div id="scanProgress" class="progress-container hidden">
         <div class="progress-bar">
           <div class="progress-fill" id="progressFill" style="width: 0%"></div>
         </div>
         <div class="progress-text" id="progressText">Starting scan...</div>
       </div>
-      <div id="allDeviceList" class="device-list hidden"></div>
+      <div class="sdpi-item" style="margin-top: 12px;">
+        <button id="advancedButton">Advanced Scan Options</button>
+      </div>
+      <div id="advancedSection" class="advanced-section hidden">
+        <div class="sdpi-item">
+          <label for="startIp">Start IP Address (Optional)</label>
+          <input type="text" id="startIp" placeholder="e.g., 192.168.1.1">
+        </div>
+        <div class="sdpi-item" style="margin-top: 8px;">
+          <label for="endIp">End IP Address (Optional)</label>
+          <input type="text" id="endIp" placeholder="e.g., 192.168.1.254">
+        </div>
+        <div class="ip-range-info" id="ipRangeInfo">
+          Leave empty to auto-detect and scan all network interfaces
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Device Selection Dropdown -->
+    <div class="sdpi-item">
+      <label for="deviceSelect">Select Device</label>
+      <select id="deviceSelect" class="device-dropdown">
+        <option value="">-- Scan for devices first --</option>
+      </select>
     </div>
 
     <div class="divider"></div>
@@ -284,9 +441,6 @@
         <option value="kasa">Kasa (Local API)</option>
         <option value="tapo">Tapo (Cloud Auth)</option>
       </select>
-      <div class="info-text">
-        Kasa devices work locally without credentials. Tapo devices require your TP-Link account (credentials are securely stored in Stream Deck).
-      </div>
     </div>
 
     <!-- IP Address -->
@@ -294,19 +448,67 @@
       <label for="ip">Device IP Address</label>
       <input type="text" id="ip" placeholder="192.168.1.100">
       <div class="info-text">
-        Enter the local IP address or scan for Kasa devices on your network.
+        Auto-filled when you select a device from the dropdown above.
       </div>
     </div>
 
-    <!-- Scan for Devices -->
-    <div class="sdpi-item" id="kasaScanSection">
-      <button id="scanButton">Scan for Kasa Devices</button>
-      <div id="deviceList" class="device-list hidden"></div>
+    <!-- Device Status Display -->
+    <div id="deviceStatus" class="device-status hidden">
+      <div class="status-row">
+        <span class="status-label">Device Name:</span>
+        <span class="status-value" id="statusName">--</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Device Type:</span>
+        <span class="status-value" id="statusType">--</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Current State:</span>
+        <span class="status-value" id="statusState">--</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Model:</span>
+        <span class="status-value" id="statusModel">--</span>
+      </div>
     </div>
 
     <div class="divider"></div>
+  </div>
 
-    <!-- Note: single credential fields are at the top (tapoEmail/tapoPassword) -->
+  <!-- Sign-in Modal -->
+  <div id="authModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">Sign in to TP-Link</div>
+      <div class="sdpi-item">
+        <label>Email Address</label>
+        <input type="text" id="modalEmail" placeholder="your-tplink@email.com">
+      </div>
+      <div class="sdpi-item" style="margin-top: 12px;">
+        <label>Password</label>
+        <input type="password" id="modalPassword" placeholder="Password">
+      </div>
+      <div class="info-text" style="margin-top: 12px;">
+        Your credentials are stored securely and only used to authenticate with TP-Link cloud services for Tapo devices.
+      </div>
+      <div class="modal-buttons">
+        <button id="modalCancel" class="button-secondary">Cancel</button>
+        <button id="modalSignIn">Sign In</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sign-out Confirmation Modal -->
+  <div id="signoutModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">Sign out from TP-Link?</div>
+      <div class="info-text">
+        This will remove your stored credentials. You'll need to sign in again to use Tapo devices.
+      </div>
+      <div class="modal-buttons">
+        <button id="signoutCancel" class="button-secondary">Cancel</button>
+        <button id="signoutConfirm" class="button-danger">Sign Out</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -319,6 +521,8 @@
     let uuid = null;
     let actionInfo = {};
     let settings = {};
+    let isSignedIn = false;
+    let discoveredDevices = []; // Store all discovered devices
 
     /**
      * Connect to Stream Deck websocket
@@ -399,14 +603,14 @@
         ipInput.value = settings.ip;
       }
 
-      // Request global credentials first
+      // Request global credentials
       requestGlobalCredentials();
       
-      // Request cached devices
-      requestCachedDevices();
+      // Request saved discovered devices
+      requestSavedDevices();
 
-      // Show/hide Tapo auth fields
-      toggleTapoAuth();
+      // Update device status if we have device info
+      updateDeviceStatus();
     }
 
     /**
@@ -417,27 +621,10 @@
     }
 
     /**
-     * Request cached devices from plugin
+     * Request saved discovered devices from plugin
      */
-    function requestCachedDevices() {
-      sendToPlugin({ action: 'getCachedDevices' });
-    }
-
-    /**
-     * Show or hide Tapo authentication fields based on device type
-     */
-    function toggleTapoAuth() {
-      const deviceType = document.getElementById('deviceType').value;
-      const kasaScanSection = document.getElementById('kasaScanSection');
-
-      // Unified credential fields remain visible at the top.
-      if (deviceType === 'tapo') {
-        kasaScanSection.classList.add('hidden');
-      } else if (deviceType === 'kasa') {
-        kasaScanSection.classList.remove('hidden');
-      } else {
-        kasaScanSection.classList.add('hidden');
-      }
+    function requestSavedDevices() {
+      sendToPlugin({ action: 'getSavedDevices' });
     }
 
     /**
@@ -459,62 +646,62 @@
      * Handle messages from plugin
      */
     function handlePluginMessage(payload) {
-      if (payload.action === 'devicesDiscovered') {
-        displayDiscoveredDevices(payload.devices);
-      } else if (payload.action === 'tapoDevicesDiscovered') {
-        displayDiscoveredTapoDevices(payload.devices, payload.success, payload.error);
-      } else if (payload.action === 'discoveryProgress') {
+      if (payload.action === 'discoveryProgress') {
         updateDiscoveryProgress(payload);
       } else if (payload.action === 'allDevicesDiscovered') {
         displayAllDiscoveredDevices(payload);
       } else if (payload.action === 'globalCredentialsRetrieved') {
         loadGlobalCredentials(payload);
-      } else if (payload.action === 'cachedDevicesRetrieved') {
-        loadCachedDevices(payload);
+      } else if (payload.action === 'savedDevicesRetrieved') {
+        loadSavedDevices(payload);
+      } else if (payload.action === 'deviceStatusRetrieved') {
+        displayDeviceStatus(payload);
       }
     }
 
     /**
-     * Load global credentials into form
+     * Load global credentials and update auth button
      */
     function loadGlobalCredentials(payload) {
-      const tapoEmailInput = document.getElementById('tapoEmail');
-      const tapoPasswordInput = document.getElementById('tapoPassword');
-      
-      if (payload.tapoEmail) {
-        tapoEmailInput.value = payload.tapoEmail;
-      }
-      if (payload.tapoPassword) {
-        tapoPasswordInput.value = payload.tapoPassword;
+      if (payload.tapoEmail && payload.tapoPassword) {
+        isSignedIn = true;
+        updateAuthButton();
+      } else {
+        isSignedIn = false;
+        updateAuthButton();
       }
     }
 
     /**
-     * Load cached devices if available
+     * Update auth button text based on sign-in state
      */
-    function loadCachedDevices(payload) {
-      if (payload.success && payload.kasa && payload.tapo) {
-        const totalDevices = payload.kasa.length + payload.tapo.length + (payload.unverified || []).length;
+    function updateAuthButton() {
+      const authButton = document.getElementById('authButton');
+      if (isSignedIn) {
+        authButton.innerHTML = 'Sign out from TP-Link <span class="signed-in-badge">Signed In</span>';
+      } else {
+        authButton.textContent = 'Sign in to TP-Link';
+      }
+    }
+
+    /**
+     * Load saved devices and populate dropdown
+     */
+    function loadSavedDevices(payload) {
+      if (payload.success && payload.devices) {
+        discoveredDevices = payload.devices;
+        populateDeviceDropdown();
         
-        if (totalDevices > 0) {
-          // Show cache age
-          const scanButton = document.getElementById('scanAllButton');
-          const cacheMinutes = Math.floor(payload.cacheAge / 60);
-          const cacheSeconds = payload.cacheAge % 60;
-          
-          if (cacheMinutes > 0) {
-            scanButton.textContent = `Scan (Last: ${cacheMinutes}m ${cacheSeconds}s ago)`;
+        // Update scan button with cache age
+        if (payload.cacheAge) {
+          const scanButton = document.getElementById('scanButton');
+          const minutes = Math.floor(payload.cacheAge / 60);
+          const seconds = payload.cacheAge % 60;
+          if (minutes > 0) {
+            scanButton.textContent = `Scan for Devices (Last: ${minutes}m ${seconds}s ago)`;
           } else {
-            scanButton.textContent = `Scan (Last: ${cacheSeconds}s ago)`;
+            scanButton.textContent = `Scan for Devices (Last: ${seconds}s ago)`;
           }
-          
-          // Display cached results
-          displayAllDiscoveredDevices({
-            success: true,
-            kasa: payload.kasa,
-            tapo: payload.tapo,
-            unverified: payload.unverified || []
-          });
         }
       }
     }
@@ -533,339 +720,318 @@
     }
 
     /**
-     * Display all discovered devices (unified view)
+     * Display all discovered devices
      */
     function displayAllDiscoveredDevices(result) {
-      const scanButton = document.getElementById('scanAllButton');
-      const deviceList = document.getElementById('allDeviceList');
+      const scanButton = document.getElementById('scanButton');
       const progressContainer = document.getElementById('scanProgress');
       
-      scanButton.textContent = 'Scan for All TP-Link Devices';
+      scanButton.textContent = 'Scan for Devices';
       scanButton.disabled = false;
       scanButton.classList.remove('scanning');
       progressContainer.classList.add('hidden');
 
       if (!result.success) {
-        deviceList.innerHTML = `<div class="error-message">Scan failed: ${result.error || 'Unknown error'}</div>`;
-        deviceList.classList.remove('hidden');
+        alert('Scan failed: ' + (result.error || 'Unknown error'));
         return;
       }
 
-      const totalDevices = result.kasa.length + result.tapo.length + result.unverified.length;
-      
-      if (totalDevices === 0) {
-        deviceList.innerHTML = '<div class="info-text">No TP-Link devices found. Make sure devices are powered on and connected to the same network.</div>';
-        deviceList.classList.remove('hidden');
-        return;
-      }
+      // Combine all devices
+      discoveredDevices = [
+        ...result.kasa.map(d => ({ ...d, category: 'kasa' })),
+        ...result.tapo.map(d => ({ ...d, category: 'tapo' })),
+        ...result.unverified.map(d => ({ ...d, category: 'unverified' }))
+      ];
 
-      deviceList.innerHTML = '';
-      
-      // Kasa devices section
-      if (result.kasa.length > 0) {
-        const section = document.createElement('div');
-        section.className = 'device-section';
-        section.innerHTML = `<div class="device-section-title">Kasa Devices (${result.kasa.length})</div>`;
-        
-        result.kasa.forEach(device => {
-          const item = createDeviceItem(device, 'kasa');
-          section.appendChild(item);
-        });
-        
-        deviceList.appendChild(section);
-      }
-      
-      // Tapo devices section
-      if (result.tapo.length > 0) {
-        const section = document.createElement('div');
-        section.className = 'device-section';
-        section.innerHTML = `<div class="device-section-title">Tapo Devices (${result.tapo.length})</div>`;
-        
-        result.tapo.forEach(device => {
-          const item = createDeviceItem(device, 'tapo');
-          section.appendChild(item);
-        });
-        
-        deviceList.appendChild(section);
-      }
-      
-      // Unverified devices section
-      if (result.unverified.length > 0) {
-        const section = document.createElement('div');
-        section.className = 'device-section';
-        section.innerHTML = `<div class="device-section-title">Unverified Devices (${result.unverified.length})</div>`;
-        
-        result.unverified.forEach(device => {
-          const item = createDeviceItem(device, 'unverified');
-          section.appendChild(item);
-        });
-        
-        deviceList.appendChild(section);
-      }
-      
-      deviceList.classList.remove('hidden');
-    }
-
-    /**
-     * Create a device item element
-     */
-    function createDeviceItem(device, category) {
-      const item = document.createElement('div');
-      item.className = 'device-item';
-      
-      if (category === 'unverified') {
-        item.classList.add(device.cloudOnly ? 'cloud-only' : 'unverified');
-      }
-      
-      if (settings.ip === device.ip && device.ip) {
-        item.classList.add('selected');
-      }
-      
-      let badge = '';
-      if (category === 'kasa') {
-        badge = '<span class="device-badge badge-kasa">Kasa</span>';
-      } else if (category === 'tapo') {
-        badge = '<span class="device-badge badge-tapo">Tapo</span>';
-      } else if (device.cloudOnly) {
-        badge = '<span class="device-badge badge-unverified">Cloud Only</span>';
-      } else {
-        badge = '<span class="device-badge badge-unverified">Needs IP</span>';
-      }
-      
-      const ipDisplay = device.ip || '<span class="ip-required">Not on network</span>';
-      
-      item.innerHTML = `
-        <div class="device-name">${device.name}${badge}</div>
-        <div class="device-details">${ipDisplay} • ${device.model}</div>
-      `;
-      
-      item.addEventListener('click', () => {
-        selectUnifiedDevice(device, category);
-      });
-      
-      return item;
-    }
-
-    /**
-     * Select a device from unified discovery
-     */
-    function selectUnifiedDevice(device, category) {
-      settings.deviceType = device.type || category;
-      settings.deviceId = device.deviceId;
-      settings.deviceName = device.name;
-      
-      document.getElementById('deviceType').value = settings.deviceType;
-      
-      if (device.ip && device.ip !== 'Unknown') {
-        settings.ip = device.ip;
-        document.getElementById('ip').value = device.ip;
-      } else {
-        settings.ip = '';
-        document.getElementById('ip').value = '';
-        document.getElementById('ip').placeholder = 'Enter IP for ' + device.name;
-        document.getElementById('ip').focus();
-      }
-      
-      // Copy credentials from scan form to settings
-      const email = document.getElementById('tapoEmail').value;
-      const password = document.getElementById('tapoPassword').value;
-      if (email && password && settings.deviceType === 'tapo') {
-        settings.username = email;
-        settings.password = password;
-        // Update unified credential fields (top of PI)
-        document.getElementById('tapoEmail').value = email;
-        document.getElementById('tapoPassword').value = password;
-      }
-      
-      toggleTapoAuth();
+      // Save to settings for persistence
+      settings.discoveredDevices = discoveredDevices;
+      settings.discoveryTimestamp = Date.now();
       saveSettings();
-      
-      // Update UI
-      document.querySelectorAll('.device-item').forEach(item => {
-        item.classList.remove('selected');
-      });
-      event.currentTarget.classList.add('selected');
+
+      populateDeviceDropdown();
     }
 
     /**
-     * Display discovered devices
+     * Populate device dropdown
      */
-    function displayDiscoveredDevices(devices) {
-      const scanButton = document.getElementById('scanButton');
-      const deviceList = document.getElementById('deviceList');
-      
-      scanButton.textContent = 'Scan for Kasa Devices';
-      scanButton.disabled = false;
-      scanButton.classList.remove('scanning');
+    function populateDeviceDropdown() {
+      const select = document.getElementById('deviceSelect');
+      select.innerHTML = '<option value="">-- Select a device --</option>';
 
-      if (devices.length === 0) {
-        deviceList.innerHTML = '<div class="info-text">No devices found. Make sure devices are powered on and connected to the same network.</div>';
-        deviceList.classList.remove('hidden');
+      if (discoveredDevices.length === 0) {
+        select.innerHTML = '<option value="">-- No devices found, scan first --</option>';
         return;
       }
 
-      deviceList.innerHTML = '';
-      devices.forEach((device) => {
-        const deviceItem = document.createElement('div');
-        deviceItem.className = 'device-item';
-        if (settings.ip === device.ip) {
-          deviceItem.classList.add('selected');
+      // Group by category
+      const kasa = discoveredDevices.filter(d => d.category === 'kasa');
+      const tapo = discoveredDevices.filter(d => d.category === 'tapo');
+      const unverified = discoveredDevices.filter(d => d.category === 'unverified');
+
+      if (kasa.length > 0) {
+        const group = document.createElement('optgroup');
+        group.label = `Kasa Devices (${kasa.length})`;
+        kasa.forEach((device, idx) => {
+          const option = document.createElement('option');
+          option.value = `kasa-${idx}`;
+          option.textContent = `${device.name} - ${device.ip || 'No IP'}`;
+          option.dataset.deviceIndex = idx;
+          option.dataset.category = 'kasa';
+          group.appendChild(option);
+        });
+        select.appendChild(group);
+      }
+
+      if (tapo.length > 0) {
+        const group = document.createElement('optgroup');
+        group.label = `Tapo Devices (${tapo.length})`;
+        tapo.forEach((device, idx) => {
+          const option = document.createElement('option');
+          const kasaCount = kasa.length;
+          option.value = `tapo-${idx}`;
+          option.textContent = `${device.name} - ${device.ip || 'Cloud Only'}`;
+          option.dataset.deviceIndex = kasaCount + idx;
+          option.dataset.category = 'tapo';
+          group.appendChild(option);
+        });
+        select.appendChild(group);
+      }
+
+      if (unverified.length > 0) {
+        const group = document.createElement('optgroup');
+        group.label = `Unverified Devices (${unverified.length})`;
+        unverified.forEach((device, idx) => {
+          const option = document.createElement('option');
+          const offset = kasa.length + tapo.length;
+          option.value = `unverified-${idx}`;
+          option.textContent = `${device.ip} - ${device.cloudOnly ? 'Cloud Only' : 'Needs Verification'}`;
+          option.dataset.deviceIndex = offset + idx;
+          option.dataset.category = 'unverified';
+          group.appendChild(option);
+        });
+        select.appendChild(group);
+      }
+
+      // Select current device if it matches
+      if (settings.ip) {
+        selectCurrentDevice();
+      }
+    }
+
+    /**
+     * Select current device in dropdown based on settings
+     */
+    function selectCurrentDevice() {
+      const select = document.getElementById('deviceSelect');
+      const options = select.querySelectorAll('option');
+      
+      for (const option of options) {
+        const idx = parseInt(option.dataset.deviceIndex);
+        if (!isNaN(idx) && discoveredDevices[idx]) {
+          const device = discoveredDevices[idx];
+          if (device.ip === settings.ip) {
+            select.value = option.value;
+            break;
+          }
         }
-        
-        deviceItem.innerHTML = `
-          <div class="device-name">${device.name}</div>
-          <div class="device-details">${device.ip} • ${device.model}</div>
-        `;
-        
-        deviceItem.addEventListener('click', () => {
-          selectDevice(device);
-        });
-        
-        deviceList.appendChild(deviceItem);
-      });
-      
-      deviceList.classList.remove('hidden');
+      }
     }
 
     /**
-     * Display discovered Tapo devices
+     * Update IP range info based on start/end IP inputs
      */
-    function displayDiscoveredTapoDevices(devices, success, error) {
-      // Place results into the unified device list and re-use the Scan All button state
-      const scanButton = document.getElementById('scanAllButton');
-      const deviceList = document.getElementById('allDeviceList');
-      
-      scanButton.textContent = 'Scan for All TP-Link Devices';
-      scanButton.disabled = false;
-      scanButton.classList.remove('scanning');
+    function updateIpRangeInfo() {
+      const startIp = document.getElementById('startIp').value;
+      const endIp = document.getElementById('endIp').value;
+      const infoEl = document.getElementById('ipRangeInfo');
 
-      if (!success) {
-        deviceList.innerHTML = `<div class="error-message">Login failed: ${error || 'Unknown error'}. Please check your credentials.</div>`;
-        deviceList.classList.remove('hidden');
+      if (!startIp || !endIp) {
+        infoEl.textContent = 'Leave empty to auto-detect and scan all network interfaces';
         return;
       }
 
-      if (devices.length === 0) {
-        deviceList.innerHTML = '<div class="info-text">No Tapo devices found on your account.</div>';
-        deviceList.classList.remove('hidden');
-        return;
-      }
-
-      deviceList.innerHTML = '';
-      devices.forEach((device) => {
-        const deviceItem = document.createElement('div');
-        deviceItem.className = 'device-item';
-        if (settings.ip === device.ip) {
-          deviceItem.classList.add('selected');
+      try {
+        const start = startIp.split('.').map(Number);
+        const end = endIp.split('.').map(Number);
+        
+        if (start.length !== 4 || end.length !== 4) {
+          infoEl.textContent = 'Invalid IP format';
+          return;
         }
-        
-        deviceItem.innerHTML = `
-          <div class="device-name">${device.name}</div>
-          <div class="device-details">${device.ip} • ${device.model}</div>
-        `;
-        
-        deviceItem.addEventListener('click', () => {
-          selectUnifiedDevice(device, 'tapo');
+
+        // Simple count for same subnet
+        if (start[0] === end[0] && start[1] === end[1] && start[2] === end[2]) {
+          const count = end[3] - start[3] + 1;
+          infoEl.textContent = `Will scan ${count} IP address${count !== 1 ? 'es' : ''}`;
+        } else {
+          infoEl.textContent = 'Custom range specified';
+        }
+      } catch (e) {
+        infoEl.textContent = 'Invalid IP addresses';
+      }
+    }
+
+    /**
+     * Update device status display
+     */
+    function updateDeviceStatus() {
+      if (settings.ip && settings.deviceType) {
+        // Request status from plugin
+        sendToPlugin({
+          action: 'getDeviceStatus',
+          ip: settings.ip,
+          deviceType: settings.deviceType,
+          username: settings.username,
+          password: settings.password
         });
-        
-        deviceList.appendChild(deviceItem);
-      });
-      
-      deviceList.classList.remove('hidden');
-    }
-
-    /**
-     * Select a discovered device (Kasa)
-     */
-    function selectDevice(device) {
-      settings.ip = device.ip;
-      settings.deviceType = device.type;
-      document.getElementById('ip').value = device.ip;
-      document.getElementById('deviceType').value = device.type;
-      toggleTapoAuth();
-      saveSettings();
-      
-      // Update UI
-      document.querySelectorAll('.device-item').forEach(item => {
-        item.classList.remove('selected');
-      });
-      event.currentTarget.classList.add('selected');
-    }
-
-    /**
-     * Select a discovered Tapo device
-     */
-    function selectTapoDevice(device, hasValidIp) {
-      settings.deviceType = 'tapo';
-      settings.deviceId = device.deviceId;
-      settings.deviceName = device.name;
-      document.getElementById('deviceType').value = 'tapo';
-      
-      if (hasValidIp) {
-        settings.ip = device.ip;
-        document.getElementById('ip').value = device.ip;
       } else {
-        // Clear IP field and focus it so user can enter the IP
-        settings.ip = '';
-        document.getElementById('ip').value = '';
-        document.getElementById('ip').placeholder = 'Enter IP for ' + device.name;
-        document.getElementById('ip').focus();
+        document.getElementById('deviceStatus').classList.add('hidden');
+      }
+    }
+
+    /**
+     * Display device status
+     */
+    function displayDeviceStatus(payload) {
+      const statusDiv = document.getElementById('deviceStatus');
+      
+      if (!payload.success) {
+        statusDiv.classList.add('hidden');
+        return;
+      }
+
+      document.getElementById('statusName').textContent = payload.name || settings.deviceName || 'Unknown';
+      document.getElementById('statusType').textContent = (settings.deviceType || 'Unknown').toUpperCase();
+      document.getElementById('statusModel').textContent = payload.model || 'Unknown';
+      
+      const stateEl = document.getElementById('statusState');
+      if (payload.state === true || payload.state === 'on') {
+        stateEl.textContent = 'ON';
+        stateEl.className = 'status-value status-on';
+      } else if (payload.state === false || payload.state === 'off') {
+        stateEl.textContent = 'OFF';
+        stateEl.className = 'status-value status-off';
+      } else {
+        stateEl.textContent = 'Unknown';
+        stateEl.className = 'status-value';
       }
       
-      toggleTapoAuth();
-      saveSettings();
-      
-      // Update UI
-      document.querySelectorAll('.device-item').forEach(item => {
-        item.classList.remove('selected');
-      });
-      event.currentTarget.classList.add('selected');
+      statusDiv.classList.remove('hidden');
     }
 
     /**
      * Initialize event listeners
      */
     document.addEventListener('DOMContentLoaded', function() {
+      // Auth button click
+      document.getElementById('authButton').addEventListener('click', function() {
+        if (isSignedIn) {
+          // Show sign-out modal
+          document.getElementById('signoutModal').classList.add('show');
+        } else {
+          // Show sign-in modal
+          document.getElementById('authModal').classList.add('show');
+        }
+      });
+
+      // Sign-in modal buttons
+      document.getElementById('modalCancel').addEventListener('click', function() {
+        document.getElementById('authModal').classList.remove('show');
+      });
+
+      document.getElementById('modalSignIn').addEventListener('click', function() {
+        const email = document.getElementById('modalEmail').value;
+        const password = document.getElementById('modalPassword').value;
+
+        if (!email || !password) {
+          alert('Please enter both email and password');
+          return;
+        }
+
+        // Save credentials to global settings
+        sendToPlugin({
+          action: 'saveCredentials',
+          email: email,
+          password: password
+        });
+
+        isSignedIn = true;
+        updateAuthButton();
+        document.getElementById('authModal').classList.remove('show');
+      });
+
+      // Sign-out modal buttons
+      document.getElementById('signoutCancel').addEventListener('click', function() {
+        document.getElementById('signoutModal').classList.remove('show');
+      });
+
+      document.getElementById('signoutConfirm').addEventListener('click', function() {
+        // Clear credentials
+        sendToPlugin({ action: 'clearCredentials' });
+        
+        isSignedIn = false;
+        updateAuthButton();
+        document.getElementById('signoutModal').classList.remove('show');
+      });
+
       // Device type change
       document.getElementById('deviceType').addEventListener('change', function(e) {
         settings.deviceType = e.target.value;
-        toggleTapoAuth();
         saveSettings();
+        updateDeviceStatus();
       });
 
       // IP address change
       document.getElementById('ip').addEventListener('input', function(e) {
         settings.ip = e.target.value;
         saveSettings();
+        updateDeviceStatus();
       });
 
-      // Tapo credential changes (unified top fields)
-      document.getElementById('tapoEmail').addEventListener('input', function(e) {
-        settings.username = e.target.value;
+      // Device selection
+      document.getElementById('deviceSelect').addEventListener('change', function(e) {
+        const selected = e.target.selectedOptions[0];
+        if (!selected || !selected.dataset.deviceIndex) return;
+
+        const idx = parseInt(selected.dataset.deviceIndex);
+        const device = discoveredDevices[idx];
+        
+        if (!device) return;
+
+        settings.deviceType = device.type || device.category;
+        settings.deviceId = device.deviceId;
+        settings.deviceName = device.name;
+        
+        document.getElementById('deviceType').value = settings.deviceType;
+        
+        if (device.ip && device.ip !== 'Unknown') {
+          settings.ip = device.ip;
+          document.getElementById('ip').value = device.ip;
+        } else {
+          settings.ip = '';
+          document.getElementById('ip').value = '';
+          document.getElementById('ip').placeholder = 'Enter IP for ' + device.name;
+          document.getElementById('ip').focus();
+        }
+        
         saveSettings();
+        updateDeviceStatus();
       });
 
-      document.getElementById('tapoPassword').addEventListener('input', function(e) {
-        settings.password = e.target.value;
-        saveSettings();
-      });
-
-      // Unified Scan All button click
-      document.getElementById('scanAllButton').addEventListener('click', function() {
+      // Scan button click
+      document.getElementById('scanButton').addEventListener('click', function() {
         const button = this;
-        const deviceList = document.getElementById('allDeviceList');
         const progressContainer = document.getElementById('scanProgress');
         const progressFill = document.getElementById('progressFill');
         const progressText = document.getElementById('progressText');
         
-        const email = document.getElementById('tapoEmail').value;
-        const password = document.getElementById('tapoPassword').value;
+        // Get advanced options
+        const startIp = document.getElementById('startIp').value;
+        const endIp = document.getElementById('endIp').value;
         
         button.textContent = 'Scanning...';
         button.disabled = true;
         button.classList.add('scanning');
-        deviceList.innerHTML = '';
-        deviceList.classList.add('hidden');
         
         // Show progress bar
         progressContainer.classList.remove('hidden');
@@ -874,26 +1040,23 @@
         
         sendToPlugin({ 
           action: 'discoverAllDevices',
-          username: email,
-          password: password
+          startIp: startIp || null,
+          endIp: endIp || null
         });
       });
 
-      // Scan button click (Kasa only)
-      document.getElementById('scanButton').addEventListener('click', function() {
-        const button = this;
-        const deviceList = document.getElementById('deviceList');
-        
-        button.textContent = 'Scanning...';
-        button.disabled = true;
-        button.classList.add('scanning');
-        deviceList.innerHTML = '';
-        deviceList.classList.add('hidden');
-        
-        sendToPlugin({ action: 'discoverDevices' });
+      // Advanced button toggle
+      document.getElementById('advancedButton').addEventListener('click', function() {
+        const section = document.getElementById('advancedSection');
+        section.classList.toggle('hidden');
+        this.textContent = section.classList.contains('hidden') 
+          ? 'Advanced Scan Options' 
+          : 'Hide Advanced Options';
       });
 
-      // (Removed old Tapo login button - unified scan uses top credential fields)
+      // IP range inputs
+      document.getElementById('startIp').addEventListener('input', updateIpRangeInfo);
+      document.getElementById('endIp').addEventListener('input', updateIpRangeInfo);
     });
   </script>
 </body>

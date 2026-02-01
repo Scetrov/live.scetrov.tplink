@@ -962,18 +962,14 @@ async function handleSendToPlugin(context, payload) {
     // Unified discovery - finds both Kasa and Tapo devices
     console.log('Starting unified device discovery...');
     
-    // Save credentials to global settings if provided
-    if (payload.username && payload.password) {
-      setGlobalSettings({
-        tapoEmail: payload.username,
-        tapoPassword: payload.password
-      });
-    }
+    // Use credentials from global settings if not provided
+    const username = globalSettings.tapoEmail || null;
+    const password = globalSettings.tapoPassword || null;
     
     try {
       const results = await deviceManager.discoverAllDevices(
-        payload.username,
-        payload.password,
+        username,
+        password,
         (progress) => {
           // Send progress updates to Property Inspector
           deviceManager.sendToPropertyInspector(context, {
@@ -986,6 +982,17 @@ async function handleSendToPlugin(context, payload) {
       // Cache the results with timestamp
       deviceManager.cachedDiscoveryResults = results;
       deviceManager.lastDiscoveryTime = Date.now();
+      
+      // Also save to global settings for persistence
+      const allDevices = [
+        ...results.kasa.map(d => ({ ...d, category: 'kasa' })),
+        ...results.tapo.map(d => ({ ...d, category: 'tapo' })),
+        ...results.unverified.map(d => ({ ...d, category: 'unverified' }))
+      ];
+      setGlobalSettings({
+        discoveredDevices: allDevices,
+        discoveryTimestamp: Date.now()
+      });
       
       deviceManager.sendToPropertyInspector(context, {
         action: 'allDevicesDiscovered',
@@ -1023,6 +1030,23 @@ async function handleSendToPlugin(context, payload) {
         message: 'No cached devices available'
       });
     }
+  } else if (payload.action === 'getSavedDevices') {
+    // Return saved devices from global settings
+    if (globalSettings.discoveredDevices && globalSettings.discoveryTimestamp) {
+      const cacheAge = Math.floor((Date.now() - globalSettings.discoveryTimestamp) / 1000);
+      deviceManager.sendToPropertyInspector(context, {
+        action: 'savedDevicesRetrieved',
+        devices: globalSettings.discoveredDevices,
+        cacheAge: cacheAge,
+        success: true
+      });
+    } else {
+      deviceManager.sendToPropertyInspector(context, {
+        action: 'savedDevicesRetrieved',
+        devices: [],
+        success: false
+      });
+    }
   } else if (payload.action === 'getGlobalCredentials') {
     // Send global credentials to Property Inspector
     deviceManager.sendToPropertyInspector(context, {
@@ -1030,6 +1054,65 @@ async function handleSendToPlugin(context, payload) {
       tapoEmail: globalSettings.tapoEmail || '',
       tapoPassword: globalSettings.tapoPassword || ''
     });
+  } else if (payload.action === 'saveCredentials') {
+    // Save credentials to global settings
+    setGlobalSettings({
+      tapoEmail: payload.email,
+      tapoPassword: payload.password
+    });
+    console.log('Credentials saved to global settings');
+  } else if (payload.action === 'clearCredentials') {
+    // Clear credentials from global settings
+    setGlobalSettings({
+      tapoEmail: '',
+      tapoPassword: ''
+    });
+    console.log('Credentials cleared from global settings');
+  } else if (payload.action === 'getDeviceStatus') {
+    // Get current device status
+    console.log(`Getting status for device at ${payload.ip}`);
+    try {
+      let deviceInfo = null;
+      
+      if (payload.deviceType === 'kasa') {
+        const device = await deviceManager.kasaClient.getDevice({ host: payload.ip });
+        const sysInfo = await device.getSysInfo();
+        deviceInfo = {
+          success: true,
+          name: sysInfo.alias || 'Unknown',
+          model: sysInfo.model || 'Unknown',
+          state: sysInfo.relay_state === 1
+        };
+      } else if (payload.deviceType === 'tapo' && payload.username && payload.password) {
+        const device = await loginDeviceByIp(payload.username, payload.password, payload.ip);
+        const info = await device.getDeviceInfo();
+        deviceInfo = {
+          success: true,
+          name: info.nickname || info.alias || 'Unknown',
+          model: info.model || 'Unknown',
+          state: info.device_on
+        };
+      }
+      
+      if (deviceInfo) {
+        deviceManager.sendToPropertyInspector(context, {
+          action: 'deviceStatusRetrieved',
+          ...deviceInfo
+        });
+      } else {
+        deviceManager.sendToPropertyInspector(context, {
+          action: 'deviceStatusRetrieved',
+          success: false
+        });
+      }
+    } catch (error) {
+      console.error('Error getting device status:', error.message);
+      deviceManager.sendToPropertyInspector(context, {
+        action: 'deviceStatusRetrieved',
+        success: false,
+        error: error.message
+      });
+    }
   }
 }
 
