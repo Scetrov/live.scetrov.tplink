@@ -1,0 +1,68 @@
+# Stream Deck Plugin Distribution Ignore File
+# Files matching these patterns will be excluded from the .streamDeckPlugin package
+
+# Development files
+__tests__/
+tests/
+docs/
+.github/
+
+# Build and development tools
+build-plugin.ps1
+.gitignore
+.sdignore
+.markdownlint.json
+jest.config.js
+.eslintrc*
+
+# Documentation (except main README)
+*.md
+!README.md
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Node.js development
+package-lock.json
+yarn.lock
+.npmrc
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Test and coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Node modules test files (will be cleaned by build script)
+node_modules/**/test/
+node_modules/**/tests/
+node_modules/**/*.test.js
+node_modules/**/*.spec.js
+node_modules/**/.github/
+node_modules/**/CHANGELOG.md

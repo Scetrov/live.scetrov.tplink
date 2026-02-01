@@ -1,13 +1,13 @@
 {
   "Name": "TP-Link Smart Control",
-  "Version": "1.0.0",
-  "Author": "scetrov",
-  "Category": "TP-Link Smart Plugs",
+  "Version": "2.0.0",
+  "Author": "Scetrov",
+  "Category": "Smart Home",
   "CategoryIcon": "images/plug-toggle@2x",
   "CodePath": "plugin.js",
-  "Description": "Control TP-Link Kasa and Tapo smart plugs",
+  "Description": "Control TP-Link Kasa and Tapo smart plugs with automatic device discovery, cloud sync, and real-time status updates",
   "Icon": "images/plugin-icon@2x",
-  "URL": "https://github.com/scetrov/tplink-streamdeck",
+  "URL": "https://github.com/Scetrov/live.scetrov.tplink",
   "SDKVersion": 2,
   "Software": {
     "MinimumVersion": "6.0"
