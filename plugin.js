@@ -345,16 +345,36 @@ class DeviceManager {
       return [];
     }
 
-    // Only support same subnet for now (first 3 octets must match)
-    if (start[0] !== end[0] || start[1] !== end[1] || start[2] !== end[2]) {
-      console.error('Start and End IP must be in the same /24 subnet');
+    // Validate that first two octets match (must be same /16 network)
+    if (start[0] !== end[0] || start[1] !== end[1]) {
+      console.error('Start and End IP must be in the same /16 network (first two octets must match)');
       return [];
     }
 
-    // Generate list of IPs
-    const subnet = `${start[0]}.${start[1]}.${start[2]}`;
-    for (let i = start[3]; i <= end[3]; i++) {
-      ips.push(`${subnet}.${i}`);
+    // Convert to numeric representation for comparison
+    const startNum = (start[0] << 24) + (start[1] << 16) + (start[2] << 8) + start[3];
+    const endNum = (end[0] << 24) + (end[1] << 16) + (end[2] << 8) + end[3];
+
+    if (startNum > endNum) {
+      console.error('Start IP must be less than or equal to End IP');
+      return [];
+    }
+
+    // Limit to 65536 IPs to prevent memory issues
+    const count = endNum - startNum + 1;
+    if (count > 65536) {
+      console.error('IP range too large (max 65536 addresses)');
+      return [];
+    }
+
+    // Generate list of IPs across subnets
+    for (let third = start[2]; third <= end[2]; third++) {
+      const startFourth = (third === start[2]) ? start[3] : 0;
+      const endFourth = (third === end[2]) ? end[3] : 255;
+      
+      for (let fourth = startFourth; fourth <= endFourth; fourth++) {
+        ips.push(`${start[0]}.${start[1]}.${third}.${fourth}`);
+      }
     }
 
     console.log(`Custom range: ${ips.length} IP addresses from ${startIp} to ${endIp}`);

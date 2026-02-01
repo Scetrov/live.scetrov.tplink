@@ -603,6 +603,21 @@
         ipInput.value = settings.ip;
       }
 
+      // Load custom IP range
+      const startIpInput = document.getElementById('startIp');
+      const endIpInput = document.getElementById('endIp');
+      if (settings.startIp) {
+        startIpInput.value = settings.startIp;
+      }
+      if (settings.endIp) {
+        endIpInput.value = settings.endIp;
+      }
+      
+      // Update IP range info if both are set
+      if (settings.startIp && settings.endIp) {
+        updateIpRangeInfo();
+      }
+
       // Request global credentials
       requestGlobalCredentials();
       
@@ -859,13 +874,29 @@
           return;
         }
 
-        // Simple count for same subnet
-        if (start[0] === end[0] && start[1] === end[1] && start[2] === end[2]) {
-          const count = end[3] - start[3] + 1;
-          infoEl.textContent = `Will scan ${count} IP address${count !== 1 ? 'es' : ''}`;
-        } else {
-          infoEl.textContent = 'Custom range specified';
+        // Validate first two octets match (same /16 network)
+        if (start[0] !== end[0] || start[1] !== end[1]) {
+          infoEl.textContent = 'IPs must be in same /16 network (first two octets must match)';
+          return;
         }
+
+        // Calculate IP count for cross-subnet range
+        const startNum = (start[0] << 24) + (start[1] << 16) + (start[2] << 8) + start[3];
+        const endNum = (end[0] << 24) + (end[1] << 16) + (end[2] << 8) + end[3];
+        
+        if (startNum > endNum) {
+          infoEl.textContent = 'Start IP must be less than or equal to End IP';
+          return;
+        }
+
+        const count = endNum - startNum + 1;
+        
+        if (count > 65536) {
+          infoEl.textContent = 'Range too large (max 65,536 addresses)';
+          return;
+        }
+
+        infoEl.textContent = `Will scan ${count.toLocaleString()} IP address${count !== 1 ? 'es' : ''}`;
       } catch (e) {
         infoEl.textContent = 'Invalid IP addresses';
       }
@@ -1055,8 +1086,16 @@
       });
 
       // IP range inputs
-      document.getElementById('startIp').addEventListener('input', updateIpRangeInfo);
-      document.getElementById('endIp').addEventListener('input', updateIpRangeInfo);
+      document.getElementById('startIp').addEventListener('input', function(e) {
+        settings.startIp = e.target.value;
+        saveSettings();
+        updateIpRangeInfo();
+      });
+      document.getElementById('endIp').addEventListener('input', function(e) {
+        settings.endIp = e.target.value;
+        saveSettings();
+        updateIpRangeInfo();
+      });
     });
   </script>
 </body>
