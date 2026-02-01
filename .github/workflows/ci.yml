@@ -41,15 +41,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run markdownlint
-        uses: igorshubovych/markdownlint-action@v2
+      - name: Use Node.js 20 for markdown lint
+        uses: actions/setup-node@v4
         with:
-          config: |
-            MD022: true
-            MD031: true
-            MD032: true
-            MD007: true
-            MD040: true
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies for linting
+        run: npm ci
+
+      - name: Run markdownlint
+        run: npm run lint:md
 
       - name: Install pre-commit (for running local hooks in CI)
         run: |
