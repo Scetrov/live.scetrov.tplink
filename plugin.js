@@ -45,34 +45,102 @@ class DeviceManager {
   }
 
   /**
-   * Get local network subnets from system interfaces
+   * Convert netmask to CIDR prefix length
+   * @param {string} netmask - Netmask in dotted decimal notation (e.g., '255.255.255.0')
+   * @returns {number} - CIDR prefix length (e.g., 24)
+   */
+  netmaskToCIDR(netmask) {
+    const parts = netmask.split('.').map(Number);
+    let cidr = 0;
+    for (const part of parts) {
+      const binary = part.toString(2);
+      cidr += (binary.match(/1/g) || []).length;
+    }
+    return cidr;
+  }
+
+  /**
+   * Calculate network address from IP and netmask
+   * @param {string} ip - IP address
+   * @param {string} netmask - Netmask
+   * @returns {string} - Network address
+   */
+  getNetworkAddress(ip, netmask) {
+    const ipParts = ip.split('.').map(Number);
+    const maskParts = netmask.split('.').map(Number);
+    const networkParts = ipParts.map((part, i) => part & maskParts[i]);
+    return networkParts.join('.');
+  }
+
+  /**
+   * Get local network subnets from system interfaces with proper CIDR calculation
    * @returns {Array} - Array of subnet prefixes (e.g., ['192.168.1', '10.0.0'])
    */
   getLocalSubnets() {
     const subnets = new Set();
     const interfaces = os.networkInterfaces();
     
+    console.log('Detecting network interfaces and calculating CIDR ranges...');
+    
     for (const [name, addrs] of Object.entries(interfaces)) {
       for (const addr of addrs) {
         if (addr.family === 'IPv4' && !addr.internal) {
-          // Extract subnet prefix (first 3 octets for /24, adjust for larger)
-          const parts = addr.address.split('.');
-          const prefix = parts.slice(0, 3).join('.');
-          subnets.add(prefix);
+          const cidr = this.netmaskToCIDR(addr.netmask);
+          const networkAddr = this.getNetworkAddress(addr.address, addr.netmask);
           
-          // For larger subnets (like /16), add nearby subnets
-          if (addr.netmask === '255.255.0.0') {
-            const base = parseInt(parts[2]);
-            // Scan a wider range for /16 networks to catch devices on different subnets
-            for (let i = Math.max(0, base - 15); i <= Math.min(255, base + 15); i++) {
-              subnets.add(`${parts[0]}.${parts[1]}.${i}`);
+          console.log(`  Interface ${name}: ${addr.address}/${cidr} (network: ${networkAddr})`);
+          
+          // Calculate all /24 subnets within this CIDR range
+          const ipParts = addr.address.split('.').map(Number);
+          const maskParts = addr.netmask.split('.').map(Number);
+          
+          if (cidr >= 24) {
+            // /24 or smaller - just scan this single /24 subnet
+            const prefix = ipParts.slice(0, 3).join('.');
+            subnets.add(prefix);
+            console.log(`    Adding /24 subnet: ${prefix}.x`);
+          } else if (cidr >= 16) {
+            // Between /16 and /24 - calculate all /24s in the range
+            const networkParts = networkAddr.split('.').map(Number);
+            const thirdOctetBits = Math.max(0, 24 - cidr);
+            const thirdOctetRange = Math.pow(2, thirdOctetBits);
+            
+            if (cidr === 16) {
+              // For /16 networks, scan ALL 256 subnets (devices can be anywhere)
+              console.log(`    CIDR /16: scanning all 256 /24 subnets in ${networkParts[0]}.${networkParts[1]}.0.0/16`);
+              for (let i = 0; i < 256; i++) {
+                const prefix = `${networkParts[0]}.${networkParts[1]}.${i}`;
+                subnets.add(prefix);
+              }
+            } else {
+              // For /17 through /23, calculate the exact range
+              const thirdOctetStart = networkParts[2];
+              console.log(`    CIDR /${cidr}: scanning ${thirdOctetRange} /24 subnets starting at ${thirdOctetStart}`);
+              
+              for (let i = 0; i < thirdOctetRange && i < 256; i++) {
+                const thirdOctet = thirdOctetStart + i;
+                if (thirdOctet <= 255) {
+                  const prefix = `${networkParts[0]}.${networkParts[1]}.${thirdOctet}`;
+                  subnets.add(prefix);
+                }
+              }
+            }
+          } else {
+            // /15 or larger - too big, use heuristic approach
+            // Scan ±32 subnets around the current interface IP
+            console.log(`    Large network (/${cidr}): using heuristic ±32 subnets`);
+            const base = ipParts[2];
+            for (let i = Math.max(0, base - 32); i <= Math.min(255, base + 32); i++) {
+              subnets.add(`${ipParts[0]}.${ipParts[1]}.${i}`);
             }
           }
         }
       }
     }
     
-    return Array.from(subnets);
+    const subnetArray = Array.from(subnets).sort();
+    console.log(`Total subnets to scan: ${subnetArray.length}`);
+    return subnetArray;
   }
 
   /**
