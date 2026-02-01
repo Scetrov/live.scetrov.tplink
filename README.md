@@ -1,32 +1,59 @@
 # TP-Link Smart Control Plugin for Elgato Stream Deck
 
+[![CI](https://github.com/Scetrov/live.scetrov.tplink/actions/workflows/ci.yml/badge.svg)](https://github.com/Scetrov/live.scetrov.tplink/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Scetrov/live.scetrov.tplink?label=release)](https://github.com/Scetrov/live.scetrov.tplink/releases)
+[![License](https://img.shields.io/github/license/Scetrov/live.scetrov.tplink.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-18%20|%2020-blue.svg)](https://nodejs.org/)
+
 Control your TP-Link Kasa and Tapo smart plugs directly from your Elgato Stream Deck. This plugin provides seamless integration with both product lines, supporting device discovery, power control, and real-time status updates.
+
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Discovery System](#discovery-system)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Continuous Integration](#continuous-integration)
+- [License](#license)
 
 ## Features
 
 ### Multi-Device Support
+
 - **Kasa Devices**: HS100, HS110, and other Kasa smart plugs
 - **Tapo Devices**: P100, P110, P115, and other Tapo smart plugs
 - Automatic device type detection
 
 ### Smart Discovery
+
 - **Unified Discovery System**: Finds both Kasa and Tapo devices in one scan
+
 - **Multi-Method Detection**:
-  - UDP broadcast discovery for Kasa devices
-  - ARP table scanning for TP-Link MAC addresses
-  - Network port scanning (Port 80 for Tapo, Port 9999 for Kasa)
-  - Cloud API integration for Tapo device names
-  - Local verification with TP-Link account credentials
+- **Multi-Method Detection**:
+
+   - UDP broadcast discovery for Kasa devices
+   - ARP table scanning for TP-Link MAC addresses
+   - Network port scanning (Port 80 for Tapo, Port 9999 for Kasa)
+   - Cloud API integration for Tapo device names
+   - Local verification with TP-Link account credentials
+
 - **Result Caching**: Discovered devices are cached to avoid repeated scans
+
 - **Broad Network Coverage**: Scans /16 networks comprehensively (±15 subnets)
 
 ### Control Options
+
 Three action types for flexible control:
+
 - **Toggle**: Switch device on/off with each button press
 - **Turn On**: Always turn the device on
 - **Turn Off**: Always turn the device off
 
 ### Persistent Configuration
+
 - **Global Credentials**: TP-Link account credentials saved globally and shared across all buttons
 - **Cached Discovery**: Device list persists across plugin loads
 - **Per-Button Settings**: Each button remembers its assigned device
@@ -40,30 +67,38 @@ Three action types for flexible control:
 ## Quick Start
 
 ### 1. Add a Control Action
+
 - Drag the "TP-Link Toggle" (or "Turn On"/"Turn Off") action onto a button
 - The Property Inspector will open automatically
 
 ### 2. Configure TP-Link Account (First Time Only)
+
 - Enter your TP-Link account email and password at the top of the Property Inspector
 - These credentials are saved globally and shared across all buttons
 - Required for Tapo devices and device name lookup
 
 ### 3. Discover Devices
+
 - Click **"Scan for All TP-Link Devices"**
-- The scan will:
-  - Take 30-60 seconds to complete
-  - Show a progress bar with current stage
-  - Find both Kasa and Tapo devices
-  - Cache results for future use
+ - The scan will:
+
+   - Take 30-60 seconds to complete
+   - Show a progress bar with current stage
+   - Find both Kasa and Tapo devices
+   - Cache results for future use
 
 ### 4. Select Your Device
-- Choose a device from the discovered list:
-  - **Kasa Devices**: Ready to use immediately
-  - **Tapo Devices**: May require manual IP entry if not auto-detected
-  - **Unverified Devices**: Devices found via network scan but not verified
-- The device name and IP will be saved to the button
+
+ - Choose a device from the discovered list:
+
+   - **Kasa Devices**: Ready to use immediately
+   - **Tapo Devices**: May require manual IP entry if not auto-detected
+   - **Unverified Devices**: Devices found via network scan but not verified
+
+ - The device name and IP will be saved to the button
 
 ### 5. Test Control
+
 - Press the button to toggle your device
 - The button will update to show the current power state
 
@@ -72,15 +107,18 @@ Three action types for flexible control:
 ### Device Settings
 
 #### Device Type
+
 - **Kasa**: For HS100, HS110, and similar devices
 - **Tapo**: For P100, P110, P115, and similar devices
 
 #### IP Address
+
 - Automatically populated when selecting from discovered devices
 - Can be manually entered if known
 - Required for all devices
 
 #### Credentials (Tapo Only)
+
 - Tapo devices require TP-Link account credentials
 - Credentials are stored globally and reused across all buttons
 - Same email/password used in the Tapo mobile app
@@ -89,29 +127,34 @@ Three action types for flexible control:
 
 The plugin uses a sophisticated tiered discovery approach:
 
-#### Stage 1: Kasa UDP Discovery (0-25%)
+-#### Stage 1: Kasa UDP Discovery (0-25%)
+
 - Broadcasts to local network subnets
 - Fastest method for Kasa devices
 - Limited by Windows Firewall in some environments
 
-#### Stage 2: ARP Table Scan (25-30%)
+-#### Stage 2: ARP Table Scan (25-30%)
+
 - Checks system ARP table for TP-Link MAC addresses
 - Identifies devices that have communicated with your computer
 - Supported MAC prefixes: 40-8d-5c, 98-da-c4, 50-c7-bf, b0-4e-26, 60-a4-b7, a8-42-a1, 3c-6a-9d, c0-c9-e3, 5c-e9-31, 54-af-97, 1c-3b-f3, b4-b0-24
 
-#### Stage 3: Network Port Scanning (30-60%)
+-#### Stage 3: Network Port Scanning (30-60%)
+
 - Scans detected subnets for open ports:
-  - Port 9999: Kasa devices
-  - Port 80: Tapo devices
+   - Port 9999: Kasa devices
+   - Port 80: Tapo devices
 - Automatically expands to scan ±15 subnets on /16 networks
 - Batched scanning for improved performance
 
-#### Stage 4: Cloud Discovery (60-80%)
+-#### Stage 4: Cloud Discovery (60-80%)
+
 - Logs into TP-Link cloud with provided credentials
 - Retrieves device names and IDs from your account
 - Provides friendly names even when IPs aren't available
 
-#### Stage 5: Local Verification (80-100%)
+-#### Stage 5: Local Verification (80-100%)
+
 - Attempts to verify Tapo devices via local login
 - Matches cloud devices with network-discovered IPs
 - Confirms device accessibility
@@ -137,6 +180,9 @@ The plugin uses a sophisticated tiered discovery approach:
 **Symptoms**: HS100/HS110 not appearing in discovery results
 
 **Solutions**:
+ 
+**Solutions**:
+
 1. **Check Network Connectivity**:
    - Verify device is powered on
    - Ensure device is connected to Wi-Fi
@@ -162,6 +208,7 @@ The plugin uses a sophisticated tiered discovery approach:
 **Symptoms**: Tapo device found in cloud but IP shows "Unknown"
 
 **Solutions**:
+
 1. **Check Router DHCP List**:
    - Log into router admin panel
    - Find Tapo device in connected devices
@@ -180,6 +227,7 @@ The plugin uses a sophisticated tiered discovery approach:
 ### Discovery Takes Too Long
 
 **Solutions**:
+
 1. **Use Cached Results**:
    - Results are cached after first scan
    - Subsequent opens load instantly
@@ -200,6 +248,7 @@ The plugin uses a sophisticated tiered discovery approach:
 **Symptoms**: Have to re-enter email/password for each button
 
 **Solutions**:
+
 - Credentials are now saved globally (as of recent update)
 - Enter once at the top of the Property Inspector
 - All buttons will use the same credentials
@@ -220,12 +269,14 @@ The plugin uses a sophisticated tiered discovery approach:
 ## Development
 
 ### Prerequisites
+
 - Node.js 20 or higher
 - Elgato Stream Deck software
 - TP-Link Kasa and/or Tapo devices for testing
 
 ### Project Structure
-```
+
+```text
 live.scetrov.tplink.sdPlugin/
 ├── plugin.js                    # Main plugin logic
 ├── property-inspector.html      # Configuration UI
@@ -243,7 +294,9 @@ live.scetrov.tplink.sdPlugin/
    └── ...
 ```
 
+
 ### Key Dependencies
+
 - `tplink-smarthome-api` (^5.0.0): Kasa device communication
 - `tp-link-tapo-connect` (^2.0.8): Tapo cloud and local API
 - `ws` (^8.16.0): WebSocket for Stream Deck communication
@@ -251,16 +304,19 @@ live.scetrov.tplink.sdPlugin/
 ### Building and Testing
 
 **Install Dependencies**:
+
 ```powershell
 npm install
 ```
 
 **Run Unit Tests (Jest)**:
+
 ```powershell
 npm test
 ```
 
 **Run Integration Tests (if present)**:
+
 ```powershell
 # Runs only integration tests located in __tests__/integration
 npm test -- --testPathPattern="__tests__/integration"
@@ -269,12 +325,14 @@ npm test -- --testPathPattern="__tests__/integration"
 Note: Unit tests run automatically on push and pull requests via the GitHub Actions workflow `.github/workflows/ci.yml`. Integration tests can be run manually from the Actions UI using the "Integration Tests (manual)" workflow; set repository secrets `TAPO_EMAIL` and `TAPO_PASSWORD` if running integration tests against real devices.
 
 **Set Test Credentials** (PowerShell):
+
 ```powershell
 $env:TAPO_EMAIL="your-email@example.com"
 $env:TAPO_PASSWORD="yourpassword"
 ```
 
 **Reload Plugin**:
+
 ```powershell
 # Restart Stream Deck to reload plugin
 Stop-Process -Name StreamDeck -Force
@@ -284,6 +342,7 @@ Start-Process 'C:\Program Files\Elgato\StreamDeck\StreamDeck.exe'
 ### Architecture
 
 #### Plugin (plugin.js)
+
 - **DeviceManager**: Handles device discovery and control
 - **Global Settings**: Stores TP-Link credentials globally
 - **Device Cache**: Maintains discovered device list
@@ -291,6 +350,7 @@ Start-Process 'C:\Program Files\Elgato\StreamDeck\StreamDeck.exe'
 - **Event Handlers**: Processes button presses and configuration changes
 
 #### Property Inspector (property-inspector.html)
+
 - **Configuration UI**: Device selection and settings
 - **Discovery Interface**: Scan button and device list
 - **Credential Management**: Global credential input
@@ -298,6 +358,7 @@ Start-Process 'C:\Program Files\Elgato\StreamDeck\StreamDeck.exe'
 - **WebSocket Client**: Communicates with plugin
 
 #### Discovery Pipeline
+
 1. Local network detection (getLocalSubnets)
 2. Kasa UDP broadcast (discoverDevices)
 3. ARP table parsing (getArpTableTpLinkDevices)
@@ -309,6 +370,7 @@ Start-Process 'C:\Program Files\Elgato\StreamDeck\StreamDeck.exe'
 ### API Reference
 
 #### Plugin → Property Inspector Messages
+
 - `devicesDiscovered`: Kasa devices found
 - `tapoDevicesDiscovered`: Tapo devices found
 - `allDevicesDiscovered`: Unified discovery results
@@ -317,6 +379,7 @@ Start-Process 'C:\Program Files\Elgato\StreamDeck\StreamDeck.exe'
 - `cachedDevicesRetrieved`: Cached device list
 
 #### Property Inspector → Plugin Messages
+
 - `discoverDevices`: Start Kasa discovery
 - `discoverTapoDevices`: Start Tapo discovery
 - `discoverAllDevices`: Start unified discovery
@@ -326,17 +389,20 @@ Start-Process 'C:\Program Files\Elgato\StreamDeck\StreamDeck.exe'
 ## Network Requirements
 
 ### Firewall Ports
+
 - **UDP 9999**: Kasa device discovery (outbound broadcast)
 - **TCP 9999**: Kasa device control (outbound)
 - **TCP 80**: Tapo device control (outbound)
 - **TCP 443**: Tapo cloud API (outbound)
 
 ### Network Topology
+
 - Devices and computer must be on the same network or routable subnets
 - AP isolation must be disabled on router
 - VLANs must allow cross-VLAN communication if devices are separated
 
 ### Subnet Support
+
 - /24 networks: Fully supported
 - /16 networks: Scans ±15 subnets from detected interfaces
 - /8 networks: Not recommended (too many IPs to scan)
@@ -344,17 +410,20 @@ Start-Process 'C:\Program Files\Elgato\StreamDeck\StreamDeck.exe'
 ## Privacy and Security
 
 ### Data Storage
+
 - **Credentials**: Stored locally in Stream Deck's global settings
 - **Device Cache**: Stored in plugin memory (lost on restart)
 - **No External Services**: Communicates only with your devices and TP-Link cloud
 
 ### Credential Security
+
 - Credentials are stored by Stream Deck software
 - Transmitted over local network only
 - HTTPS used for TP-Link cloud API
 - No third-party services involved
 
 ### Network Security
+
 - Plugin does not expose any network services
 - All communication is outbound only
 - Local API uses TP-Link's encryption (where available)
@@ -376,6 +445,7 @@ MIT License - See LICENSE file for details
 Contributions are welcome! Please submit pull requests or open issues on GitHub.
 
 ### Development Guidelines
+
 - Test with both Kasa and Tapo devices
 - Run test suite before submitting
 - Update documentation for new features
@@ -384,13 +454,15 @@ Contributions are welcome! Please submit pull requests or open issues on GitHub.
 ## Support
 
 For issues, questions, or feature requests:
-- GitHub Issues: https://github.com/Scetrov/live.scetrov.tplink/issues
+
+- GitHub Issues: [Issue Tracker](https://github.com/Scetrov/live.scetrov.tplink/issues)
 - Check troubleshooting section above
 - Review test scripts in `tests/` folder for examples
 
 ## Changelog
 
 ### v1.0.0 (Current)
+
 - Initial release
 - Kasa and Tapo device support
 - Unified discovery system
