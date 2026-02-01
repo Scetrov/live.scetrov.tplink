@@ -1,0 +1,40 @@
+name: Integration Tests (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_integration:
+        description: 'Run integration tests if present'
+        required: true
+        default: 'yes'
+
+jobs:
+  integration:
+    name: Integration tests (manual)
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.run_integration == 'yes' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests (if any)
+        env:
+          TAPO_EMAIL: ${{ secrets.TAPO_EMAIL }}
+          TAPO_PASSWORD: ${{ secrets.TAPO_PASSWORD }}
+        run: |
+          if [ -d "__tests__/integration" ] && [ "$(ls -A __tests__/integration)" ]; then
+            echo "Running integration tests..."
+            npm test -- --testPathPattern="__tests__/integration"
+          else
+            echo "No integration tests present. Nothing to run."
+          fi

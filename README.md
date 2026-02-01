@@ -232,15 +232,15 @@ live.scetrov.tplink.sdPlugin/
 ├── manifest.json                # Plugin metadata
 ├── package.json                 # Node.js dependencies
 ├── images/                      # Plugin icons
-├── tests/                       # Test scripts
-│   ├── test-hs110-discovery.js  # Kasa discovery tests
-│   ├── test-tapo-ip.js          # Tapo network tests
-│   ├── test-unified-discovery.js # Full discovery tests
+├── __tests__/                   # Jest unit tests
+│   ├── cidr.test.js
+│   ├── scan.test.js
 │   └── ...
+├── __tests__/integration/       # (Optional) integration tests - not run by default in CI
 └── docs/                        # Documentation
-    ├── TESTING-GUIDE.md
-    ├── TEST-RESULTS.md
-    └── ...
+   ├── TESTING-GUIDE.md
+   ├── TEST-RESULTS.md
+   └── ...
 ```
 
 ### Key Dependencies
@@ -255,20 +255,18 @@ live.scetrov.tplink.sdPlugin/
 npm install
 ```
 
-**Run Tests**:
+**Run Unit Tests (Jest)**:
 ```powershell
-# Quick discovery test
-node tests/test-quick.js
-
-# Full unified discovery
-node tests/test-unified-discovery.js
-
-# Kasa-specific tests
-node tests/test-hs110-discovery.js
-
-# Network scanning tests
-node tests/test-network-scan.js
+npm test
 ```
+
+**Run Integration Tests (if present)**:
+```powershell
+# Runs only integration tests located in __tests__/integration
+npm test -- --testPathPattern="__tests__/integration"
+```
+
+Note: Unit tests run automatically on push and pull requests via the GitHub Actions workflow `.github/workflows/ci.yml`. Integration tests can be run manually from the Actions UI using the "Integration Tests (manual)" workflow; set repository secrets `TAPO_EMAIL` and `TAPO_PASSWORD` if running integration tests against real devices.
 
 **Set Test Credentials** (PowerShell):
 ```powershell
