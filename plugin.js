@@ -319,13 +319,95 @@ class DeviceManager {
   }
 
   /**
+   * Generate IP list from start and end IP addresses
+   * @param {string} startIp - Start IP address (e.g., '192.168.1.1')
+   * @param {string} endIp - End IP address (e.g., '192.168.1.254')
+   * @returns {Array<string>} - Array of IP addresses
+   */
+  getCustomIpRange(startIp, endIp) {
+    const start = startIp.split('.').map(Number);
+    const end = endIp.split('.').map(Number);
+    const ips = [];
+
+    // Validate IP addresses
+    if (start.length !== 4 || end.length !== 4) {
+      console.error('Invalid IP address format');
+      return [];
+    }
+
+    // Only support same subnet for now (first 3 octets must match)
+    if (start[0] !== end[0] || start[1] !== end[1] || start[2] !== end[2]) {
+      console.error('Start and End IP must be in the same /24 subnet');
+      return [];
+    }
+
+    // Generate list of IPs
+    const subnet = `${start[0]}.${start[1]}.${start[2]}`;
+    for (let i = start[3]; i <= end[3]; i++) {
+      ips.push(`${subnet}.${i}`);
+    }
+
+    console.log(`Custom range: ${ips.length} IP addresses from ${startIp} to ${endIp}`);
+    return ips;
+  }
+
+  /**
+   * Scan a custom IP range for TP-Link devices
+   * @param {Array<string>} ipList - Array of IP addresses to scan
+   * @param {Function} progressCallback - Optional callback for progress updates
+   * @returns {Promise<Array>} - Array of found devices
+   */
+  async scanCustomIpRange(ipList, progressCallback) {
+    const found = [];
+    const batchSize = 50;
+    const totalBatches = Math.ceil(ipList.length / batchSize);
+
+    for (let batch = 0; batch < totalBatches; batch++) {
+      const start = batch * batchSize;
+      const end = Math.min((batch + 1) * batchSize, ipList.length);
+      
+      const promises = [];
+      for (let i = start; i < end; i++) {
+        const ip = ipList[i];
+        promises.push(
+          Promise.all([
+            this.checkPort(ip, 80, 300),   // Tapo
+            this.checkPort(ip, 9999, 300)  // Kasa
+          ]).then(([port80, port9999]) => {
+            if (port80 || port9999) {
+              return { 
+                ip, 
+                tapoPort: port80, 
+                kasaPort: port9999,
+                type: port9999 ? 'kasa' : 'tapo'
+              };
+            }
+            return null;
+          })
+        );
+      }
+      
+      const results = await Promise.all(promises);
+      results.filter(r => r !== null).forEach(r => found.push(r));
+      
+      if (progressCallback) {
+        progressCallback(Math.round(((batch + 1) / totalBatches) * 100));
+      }
+    }
+    
+    return found;
+  }
+
+  /**
    * Unified device discovery - combines all methods
    * @param {string} username - TP-Link username (for Tapo)
    * @param {string} password - TP-Link password (for Tapo)
    * @param {Function} progressCallback - Progress callback
+   * @param {string} startIp - Optional custom start IP
+   * @param {string} endIp - Optional custom end IP
    * @returns {Promise<object>} - { kasa: [], tapo: [], unverified: [] }
    */
-  async discoverAllDevices(username, password, progressCallback) {
+  async discoverAllDevices(username, password, progressCallback, startIp = null, endIp = null) {
     const results = {
       kasa: [],
       tapo: [],
@@ -352,14 +434,34 @@ class DeviceManager {
 
       // Stage 3: Network scan for devices with open ports (30-60%)
       sendProgress('scan', 30, 'Scanning network for TP-Link devices...');
-      const subnets = this.getLocalSubnets();
       let allScannedDevices = [];
       
-      for (let i = 0; i < subnets.length; i++) {
-        const subnet = subnets[i];
-        sendProgress('scan', 30 + Math.round((i / subnets.length) * 30), `Scanning ${subnet}.x...`);
-        const found = await this.scanSubnetForTpLink(subnet);
-        allScannedDevices = allScannedDevices.concat(found);
+      // Use custom IP range if provided, otherwise scan subnets
+      if (startIp && endIp) {
+        const customIps = this.getCustomIpRange(startIp, endIp);
+        if (customIps.length > 0) {
+          sendProgress('scan', 30, `Scanning custom range: ${customIps.length} IPs (${startIp} - ${endIp})`);
+          allScannedDevices = await this.scanCustomIpRange(customIps, (progress) => {
+            sendProgress('scan', 30 + Math.round(progress * 0.3), `Scanning custom range... ${progress}%`);
+          });
+        } else {
+          sendProgress('scan', 30, 'Invalid custom range, falling back to subnet scan');
+          const subnets = this.getLocalSubnets();
+          for (let i = 0; i < subnets.length; i++) {
+            const subnet = subnets[i];
+            sendProgress('scan', 30 + Math.round((i / subnets.length) * 30), `Scanning ${subnet}.x...`);
+            const found = await this.scanSubnetForTpLink(subnet);
+            allScannedDevices = allScannedDevices.concat(found);
+          }
+        }
+      } else {
+        const subnets = this.getLocalSubnets();
+        for (let i = 0; i < subnets.length; i++) {
+          const subnet = subnets[i];
+          sendProgress('scan', 30 + Math.round((i / subnets.length) * 30), `Scanning ${subnet}.x...`);
+          const found = await this.scanSubnetForTpLink(subnet);
+          allScannedDevices = allScannedDevices.concat(found);
+        }
       }
       sendProgress('scan', 60, `Found ${allScannedDevices.length} device(s) with TP-Link ports`);
 
@@ -966,6 +1068,14 @@ async function handleSendToPlugin(context, payload) {
     const username = globalSettings.tapoEmail || null;
     const password = globalSettings.tapoPassword || null;
     
+    // Get custom IP range if provided
+    const startIp = payload.startIp || null;
+    const endIp = payload.endIp || null;
+    
+    if (startIp && endIp) {
+      console.log(`Using custom IP range: ${startIp} - ${endIp}`);
+    }
+    
     try {
       const results = await deviceManager.discoverAllDevices(
         username,
@@ -976,7 +1086,9 @@ async function handleSendToPlugin(context, payload) {
             action: 'discoveryProgress',
             ...progress
           });
-        }
+        },
+        startIp,
+        endIp
       );
       
       // Cache the results with timestamp
