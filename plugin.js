@@ -1064,5 +1064,5 @@ if (args.port && args.pluginUUID && args.registerEvent) {
   setTimeout(() => getGlobalSettings(), 1000);
 }
 
-// Export the entry point function
-module.exports = { connectElgatoStreamDeckSocket };
+// Export the entry point function and DeviceManager for unit testing
+module.exports = { connectElgatoStreamDeckSocket, DeviceManager };
