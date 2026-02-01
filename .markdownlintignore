@@ -1,0 +1,5 @@
+node_modules/
+.github/
+images/
+docs/
+__tests__/integration/
