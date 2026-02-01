@@ -4,7 +4,8 @@
   "description": "Elgato Stream Deck plugin for controlling TP-Link Kasa and Tapo smart plugs",
   "main": "plugin.js",
   "scripts": {
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "lint:md": "markdownlint --config .markdownlint.json '**/*.md' || true"
   },
   "jest": {
     "testEnvironment": "node",
@@ -29,8 +30,5 @@
   ,"devDependencies": {
     "jest": "^29.6.0",
     "markdownlint-cli": "^0.32.0"
-  }
-  ,"scripts": {
-    "lint:md": "markdownlint --config .markdownlint.json '**/*.md' || true"
   }
 }

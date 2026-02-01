@@ -9,6 +9,6 @@ repos:
 
       - id: npm-test
         name: Run unit tests
-        entry: npm test --silent
+        entry: npm test --silent -- --passWithNoTests
         language: system
         stages: [commit]

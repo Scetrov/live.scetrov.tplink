@@ -356,6 +356,19 @@ npm test -- --testPathPattern="__tests__/integration"
 
 Note: Unit tests run automatically on push and pull requests via the GitHub Actions workflow `.github/workflows/ci.yml`. Integration tests can be run manually from the Actions UI using the "Integration Tests (manual)" workflow; set repository secrets `TAPO_EMAIL` and `TAPO_PASSWORD` if running integration tests against real devices.
 
+### Pre-commit hooks
+
+If you use `pre-commit` (https://pre-commit.com/), install hooks locally to run markdown lint and tests before committing:
+
+```powershell
+pip install pre-commit
+pre-commit install
+# Run against all files once
+pre-commit run --all-files
+```
+
+The repository includes `.pre-commit-config.yaml` with local hooks that run `npm run lint:md` and `npm test` on commit.
+
 **Set Test Credentials** (PowerShell):
 
 ```powershell
