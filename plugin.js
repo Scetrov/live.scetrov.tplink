@@ -175,7 +175,17 @@ class DeviceManager {
       }
     }
     
-    const subnetArray = Array.from(subnets).sort();
+    // Sort subnets numerically by octets instead of string comparison
+    const subnetArray = Array.from(subnets).sort((a, b) => {
+      const partsA = a.split('.').map(Number);
+      const partsB = b.split('.').map(Number);
+      for (let i = 0; i < 4; i++) {
+        if (partsA[i] !== partsB[i]) {
+          return partsA[i] - partsB[i];
+        }
+      }
+      return 0;
+    });
     console.log(`Total subnets to scan: ${subnetArray.length}`);
     return subnetArray;
   }
