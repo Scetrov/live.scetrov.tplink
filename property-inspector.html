@@ -172,10 +172,110 @@
       font-size: 12px;
       color: #ff6b6b;
     }
+
+    .ip-required {
+      color: #f0ad4e;
+      font-style: italic;
+    }
+
+    .progress-container {
+      margin-top: 10px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background-color: #3c3c3c;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background-color: #0e99e0;
+      transition: width 0.3s ease;
+    }
+
+    .progress-text {
+      font-size: 11px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .device-section {
+      margin-top: 12px;
+    }
+
+    .device-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #0e99e0;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .device-item.unverified {
+      border-color: #5a4a20;
+      background-color: #3a3520;
+    }
+
+    .device-item.cloud-only {
+      border-color: #5a2050;
+      background-color: #3a2030;
+    }
+
+    .device-badge {
+      display: inline-block;
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      margin-left: 6px;
+      text-transform: uppercase;
+    }
+
+    .badge-kasa {
+      background-color: #1a5a2a;
+      color: #5aff8a;
+    }
+
+    .badge-tapo {
+      background-color: #1a3a5a;
+      color: #5ac8ff;
+    }
+
+    .badge-unverified {
+      background-color: #5a4a1a;
+      color: #ffc85a;
+    }
   </style>
 </head>
 <body>
   <div class="sdpi-wrapper">
+    <!-- Unified Device Discovery -->
+    <div class="sdpi-item">
+      <label>TP-Link Account (Optional for Tapo)</label>
+      <input type="text" id="tapoEmail" placeholder="your@email.com">
+    </div>
+    <div class="sdpi-item">
+      <input type="password" id="tapoPassword" placeholder="Password (for Tapo devices)">
+      <div class="info-text">
+        Enter credentials to discover and control Tapo devices. Kasa devices work without login.
+      </div>
+    </div>
+    
+    <div class="sdpi-item">
+      <button id="scanAllButton">Scan for All TP-Link Devices</button>
+      <div id="scanProgress" class="progress-container hidden">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+        <div class="progress-text" id="progressText">Starting scan...</div>
+      </div>
+      <div id="allDeviceList" class="device-list hidden"></div>
+    </div>
+
+    <div class="divider"></div>
+
     <!-- Device Type Selection -->
     <div class="sdpi-item">
       <label for="deviceType">Device Type</label>
@@ -206,30 +306,7 @@
 
     <div class="divider"></div>
 
-    <!-- Tapo Authentication (Hidden by default) -->
-    <div id="tapoAuth" class="hidden">
-      <div class="sdpi-item">
-        <label for="username">TP-Link Email</label>
-        <input type="password" id="username" placeholder="your@email.com">
-        <div class="info-text">
-          Your TP-Link/Tapo account email address (securely stored in Stream Deck).
-        </div>
-      </div>
-
-      <div class="sdpi-item">
-        <label for="password">TP-Link Password</label>
-        <input type="password" id="password" placeholder="••••••••">
-        <div class="info-text">
-          Your TP-Link/Tapo account password (securely stored in Stream Deck).
-        </div>
-      </div>
-
-      <!-- Tapo Login and Scan -->
-      <div class="sdpi-item">
-        <button id="tapoLoginButton">Login & Scan for Tapo Devices</button>
-        <div id="tapoDeviceList" class="device-list hidden"></div>
-      </div>
-    </div>
+    <!-- Note: single credential fields are at the top (tapoEmail/tapoPassword) -->
   </div>
 
   <script>
@@ -322,19 +399,28 @@
         ipInput.value = settings.ip;
       }
 
-      // Load Tapo credentials
-      const usernameInput = document.getElementById('username');
-      if (settings.username) {
-        usernameInput.value = settings.username;
-      }
-
-      const passwordInput = document.getElementById('password');
-      if (settings.password) {
-        passwordInput.value = settings.password;
-      }
+      // Request global credentials first
+      requestGlobalCredentials();
+      
+      // Request cached devices
+      requestCachedDevices();
 
       // Show/hide Tapo auth fields
       toggleTapoAuth();
+    }
+
+    /**
+     * Request global credentials from plugin
+     */
+    function requestGlobalCredentials() {
+      sendToPlugin({ action: 'getGlobalCredentials' });
+    }
+
+    /**
+     * Request cached devices from plugin
+     */
+    function requestCachedDevices() {
+      sendToPlugin({ action: 'getCachedDevices' });
     }
 
     /**
@@ -342,17 +428,14 @@
      */
     function toggleTapoAuth() {
       const deviceType = document.getElementById('deviceType').value;
-      const tapoAuth = document.getElementById('tapoAuth');
       const kasaScanSection = document.getElementById('kasaScanSection');
 
+      // Unified credential fields remain visible at the top.
       if (deviceType === 'tapo') {
-        tapoAuth.classList.remove('hidden');
         kasaScanSection.classList.add('hidden');
       } else if (deviceType === 'kasa') {
-        tapoAuth.classList.add('hidden');
         kasaScanSection.classList.remove('hidden');
       } else {
-        tapoAuth.classList.add('hidden');
         kasaScanSection.classList.add('hidden');
       }
     }
@@ -380,7 +463,228 @@
         displayDiscoveredDevices(payload.devices);
       } else if (payload.action === 'tapoDevicesDiscovered') {
         displayDiscoveredTapoDevices(payload.devices, payload.success, payload.error);
+      } else if (payload.action === 'discoveryProgress') {
+        updateDiscoveryProgress(payload);
+      } else if (payload.action === 'allDevicesDiscovered') {
+        displayAllDiscoveredDevices(payload);
+      } else if (payload.action === 'globalCredentialsRetrieved') {
+        loadGlobalCredentials(payload);
+      } else if (payload.action === 'cachedDevicesRetrieved') {
+        loadCachedDevices(payload);
       }
+    }
+
+    /**
+     * Load global credentials into form
+     */
+    function loadGlobalCredentials(payload) {
+      const tapoEmailInput = document.getElementById('tapoEmail');
+      const tapoPasswordInput = document.getElementById('tapoPassword');
+      
+      if (payload.tapoEmail) {
+        tapoEmailInput.value = payload.tapoEmail;
+      }
+      if (payload.tapoPassword) {
+        tapoPasswordInput.value = payload.tapoPassword;
+      }
+    }
+
+    /**
+     * Load cached devices if available
+     */
+    function loadCachedDevices(payload) {
+      if (payload.success && payload.kasa && payload.tapo) {
+        const totalDevices = payload.kasa.length + payload.tapo.length + (payload.unverified || []).length;
+        
+        if (totalDevices > 0) {
+          // Show cache age
+          const scanButton = document.getElementById('scanAllButton');
+          const cacheMinutes = Math.floor(payload.cacheAge / 60);
+          const cacheSeconds = payload.cacheAge % 60;
+          
+          if (cacheMinutes > 0) {
+            scanButton.textContent = `Scan (Last: ${cacheMinutes}m ${cacheSeconds}s ago)`;
+          } else {
+            scanButton.textContent = `Scan (Last: ${cacheSeconds}s ago)`;
+          }
+          
+          // Display cached results
+          displayAllDiscoveredDevices({
+            success: true,
+            kasa: payload.kasa,
+            tapo: payload.tapo,
+            unverified: payload.unverified || []
+          });
+        }
+      }
+    }
+
+    /**
+     * Update discovery progress bar
+     */
+    function updateDiscoveryProgress(progress) {
+      const progressContainer = document.getElementById('scanProgress');
+      const progressFill = document.getElementById('progressFill');
+      const progressText = document.getElementById('progressText');
+      
+      progressContainer.classList.remove('hidden');
+      progressFill.style.width = progress.percent + '%';
+      progressText.textContent = progress.message || `${progress.stage}: ${progress.percent}%`;
+    }
+
+    /**
+     * Display all discovered devices (unified view)
+     */
+    function displayAllDiscoveredDevices(result) {
+      const scanButton = document.getElementById('scanAllButton');
+      const deviceList = document.getElementById('allDeviceList');
+      const progressContainer = document.getElementById('scanProgress');
+      
+      scanButton.textContent = 'Scan for All TP-Link Devices';
+      scanButton.disabled = false;
+      scanButton.classList.remove('scanning');
+      progressContainer.classList.add('hidden');
+
+      if (!result.success) {
+        deviceList.innerHTML = `<div class="error-message">Scan failed: ${result.error || 'Unknown error'}</div>`;
+        deviceList.classList.remove('hidden');
+        return;
+      }
+
+      const totalDevices = result.kasa.length + result.tapo.length + result.unverified.length;
+      
+      if (totalDevices === 0) {
+        deviceList.innerHTML = '<div class="info-text">No TP-Link devices found. Make sure devices are powered on and connected to the same network.</div>';
+        deviceList.classList.remove('hidden');
+        return;
+      }
+
+      deviceList.innerHTML = '';
+      
+      // Kasa devices section
+      if (result.kasa.length > 0) {
+        const section = document.createElement('div');
+        section.className = 'device-section';
+        section.innerHTML = `<div class="device-section-title">Kasa Devices (${result.kasa.length})</div>`;
+        
+        result.kasa.forEach(device => {
+          const item = createDeviceItem(device, 'kasa');
+          section.appendChild(item);
+        });
+        
+        deviceList.appendChild(section);
+      }
+      
+      // Tapo devices section
+      if (result.tapo.length > 0) {
+        const section = document.createElement('div');
+        section.className = 'device-section';
+        section.innerHTML = `<div class="device-section-title">Tapo Devices (${result.tapo.length})</div>`;
+        
+        result.tapo.forEach(device => {
+          const item = createDeviceItem(device, 'tapo');
+          section.appendChild(item);
+        });
+        
+        deviceList.appendChild(section);
+      }
+      
+      // Unverified devices section
+      if (result.unverified.length > 0) {
+        const section = document.createElement('div');
+        section.className = 'device-section';
+        section.innerHTML = `<div class="device-section-title">Unverified Devices (${result.unverified.length})</div>`;
+        
+        result.unverified.forEach(device => {
+          const item = createDeviceItem(device, 'unverified');
+          section.appendChild(item);
+        });
+        
+        deviceList.appendChild(section);
+      }
+      
+      deviceList.classList.remove('hidden');
+    }
+
+    /**
+     * Create a device item element
+     */
+    function createDeviceItem(device, category) {
+      const item = document.createElement('div');
+      item.className = 'device-item';
+      
+      if (category === 'unverified') {
+        item.classList.add(device.cloudOnly ? 'cloud-only' : 'unverified');
+      }
+      
+      if (settings.ip === device.ip && device.ip) {
+        item.classList.add('selected');
+      }
+      
+      let badge = '';
+      if (category === 'kasa') {
+        badge = '<span class="device-badge badge-kasa">Kasa</span>';
+      } else if (category === 'tapo') {
+        badge = '<span class="device-badge badge-tapo">Tapo</span>';
+      } else if (device.cloudOnly) {
+        badge = '<span class="device-badge badge-unverified">Cloud Only</span>';
+      } else {
+        badge = '<span class="device-badge badge-unverified">Needs IP</span>';
+      }
+      
+      const ipDisplay = device.ip || '<span class="ip-required">Not on network</span>';
+      
+      item.innerHTML = `
+        <div class="device-name">${device.name}${badge}</div>
+        <div class="device-details">${ipDisplay} • ${device.model}</div>
+      `;
+      
+      item.addEventListener('click', () => {
+        selectUnifiedDevice(device, category);
+      });
+      
+      return item;
+    }
+
+    /**
+     * Select a device from unified discovery
+     */
+    function selectUnifiedDevice(device, category) {
+      settings.deviceType = device.type || category;
+      settings.deviceId = device.deviceId;
+      settings.deviceName = device.name;
+      
+      document.getElementById('deviceType').value = settings.deviceType;
+      
+      if (device.ip && device.ip !== 'Unknown') {
+        settings.ip = device.ip;
+        document.getElementById('ip').value = device.ip;
+      } else {
+        settings.ip = '';
+        document.getElementById('ip').value = '';
+        document.getElementById('ip').placeholder = 'Enter IP for ' + device.name;
+        document.getElementById('ip').focus();
+      }
+      
+      // Copy credentials from scan form to settings
+      const email = document.getElementById('tapoEmail').value;
+      const password = document.getElementById('tapoPassword').value;
+      if (email && password && settings.deviceType === 'tapo') {
+        settings.username = email;
+        settings.password = password;
+        // Update unified credential fields (top of PI)
+        document.getElementById('tapoEmail').value = email;
+        document.getElementById('tapoPassword').value = password;
+      }
+      
+      toggleTapoAuth();
+      saveSettings();
+      
+      // Update UI
+      document.querySelectorAll('.device-item').forEach(item => {
+        item.classList.remove('selected');
+      });
+      event.currentTarget.classList.add('selected');
     }
 
     /**
@@ -427,12 +731,13 @@
      * Display discovered Tapo devices
      */
     function displayDiscoveredTapoDevices(devices, success, error) {
-      const loginButton = document.getElementById('tapoLoginButton');
-      const deviceList = document.getElementById('tapoDeviceList');
+      // Place results into the unified device list and re-use the Scan All button state
+      const scanButton = document.getElementById('scanAllButton');
+      const deviceList = document.getElementById('allDeviceList');
       
-      loginButton.textContent = 'Login & Scan for Tapo Devices';
-      loginButton.disabled = false;
-      loginButton.classList.remove('scanning');
+      scanButton.textContent = 'Scan for All TP-Link Devices';
+      scanButton.disabled = false;
+      scanButton.classList.remove('scanning');
 
       if (!success) {
         deviceList.innerHTML = `<div class="error-message">Login failed: ${error || 'Unknown error'}. Please check your credentials.</div>`;
@@ -460,7 +765,7 @@
         `;
         
         deviceItem.addEventListener('click', () => {
-          selectDevice(device);
+          selectUnifiedDevice(device, 'tapo');
         });
         
         deviceList.appendChild(deviceItem);
@@ -470,13 +775,43 @@
     }
 
     /**
-     * Select a discovered device
+     * Select a discovered device (Kasa)
      */
     function selectDevice(device) {
       settings.ip = device.ip;
       settings.deviceType = device.type;
       document.getElementById('ip').value = device.ip;
       document.getElementById('deviceType').value = device.type;
+      toggleTapoAuth();
+      saveSettings();
+      
+      // Update UI
+      document.querySelectorAll('.device-item').forEach(item => {
+        item.classList.remove('selected');
+      });
+      event.currentTarget.classList.add('selected');
+    }
+
+    /**
+     * Select a discovered Tapo device
+     */
+    function selectTapoDevice(device, hasValidIp) {
+      settings.deviceType = 'tapo';
+      settings.deviceId = device.deviceId;
+      settings.deviceName = device.name;
+      document.getElementById('deviceType').value = 'tapo';
+      
+      if (hasValidIp) {
+        settings.ip = device.ip;
+        document.getElementById('ip').value = device.ip;
+      } else {
+        // Clear IP field and focus it so user can enter the IP
+        settings.ip = '';
+        document.getElementById('ip').value = '';
+        document.getElementById('ip').placeholder = 'Enter IP for ' + device.name;
+        document.getElementById('ip').focus();
+      }
+      
       toggleTapoAuth();
       saveSettings();
       
@@ -504,19 +839,47 @@
         saveSettings();
       });
 
-      // Username change
-      document.getElementById('username').addEventListener('input', function(e) {
+      // Tapo credential changes (unified top fields)
+      document.getElementById('tapoEmail').addEventListener('input', function(e) {
         settings.username = e.target.value;
         saveSettings();
       });
 
-      // Password change
-      document.getElementById('password').addEventListener('input', function(e) {
+      document.getElementById('tapoPassword').addEventListener('input', function(e) {
         settings.password = e.target.value;
         saveSettings();
       });
 
-      // Scan button click
+      // Unified Scan All button click
+      document.getElementById('scanAllButton').addEventListener('click', function() {
+        const button = this;
+        const deviceList = document.getElementById('allDeviceList');
+        const progressContainer = document.getElementById('scanProgress');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        
+        const email = document.getElementById('tapoEmail').value;
+        const password = document.getElementById('tapoPassword').value;
+        
+        button.textContent = 'Scanning...';
+        button.disabled = true;
+        button.classList.add('scanning');
+        deviceList.innerHTML = '';
+        deviceList.classList.add('hidden');
+        
+        // Show progress bar
+        progressContainer.classList.remove('hidden');
+        progressFill.style.width = '0%';
+        progressText.textContent = 'Starting scan...';
+        
+        sendToPlugin({ 
+          action: 'discoverAllDevices',
+          username: email,
+          password: password
+        });
+      });
+
+      // Scan button click (Kasa only)
       document.getElementById('scanButton').addEventListener('click', function() {
         const button = this;
         const deviceList = document.getElementById('deviceList');
@@ -530,31 +893,7 @@
         sendToPlugin({ action: 'discoverDevices' });
       });
 
-      // Tapo login button click
-      document.getElementById('tapoLoginButton').addEventListener('click', function() {
-        const button = this;
-        const deviceList = document.getElementById('tapoDeviceList');
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        
-        if (!username || !password) {
-          deviceList.innerHTML = '<div class="error-message">Please enter both email and password.</div>';
-          deviceList.classList.remove('hidden');
-          return;
-        }
-        
-        button.textContent = 'Logging in...';
-        button.disabled = true;
-        button.classList.add('scanning');
-        deviceList.innerHTML = '';
-        deviceList.classList.add('hidden');
-        
-        sendToPlugin({ 
-          action: 'discoverTapoDevices',
-          username: username,
-          password: password
-        });
-      });
+      // (Removed old Tapo login button - unified scan uses top credential fields)
     });
   </script>
 </body>

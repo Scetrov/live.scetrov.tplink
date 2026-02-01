@@ -5,10 +5,30 @@
 
 const { Client: KasaClient } = require('tplink-smarthome-api');
 const { loginDeviceByIp, cloudLogin } = require('tp-link-tapo-connect');
+const net = require('net');
+const { execSync } = require('child_process');
+const os = require('os');
 
 // Stream Deck plugin websocket
 let websocket = null;
 let pluginUUID = null;
+let globalSettings = {}; // Global settings shared across all buttons
+
+// TP-Link MAC address prefixes (OUI)
+const TPLINK_MAC_PREFIXES = [
+  '40-8d-5c', '40:8d:5c',
+  '98-da-c4', '98:da:c4',
+  '50-c7-bf', '50:c7:bf',
+  'b0-4e-26', 'b0:4e:26',
+  '60-a4-b7', '60:a4:b7',
+  'a8-42-a1', 'a8:42:a1',
+  '3c-6a-9d', '3c:6a:9d',
+  'c0-c9-e3', 'c0:c9:e3',
+  '5c-e9-31', '5c:e9:31',
+  '54-af-97', '54:af:97',
+  '1c-3b-f3', '1c:3b:f3',
+  'b4-b0-24', 'b4:b0:24',
+];
 
 /**
  * DeviceManager - Handles communication with TP-Link devices
@@ -20,6 +40,330 @@ class DeviceManager {
     this.kasaClient = new KasaClient();
     this.discoveredDevices = []; // Cache of discovered devices
     this.tapoCloudClient = null; // Tapo cloud connection
+    this.cachedDiscoveryResults = null; // Cache discovery results
+    this.lastDiscoveryTime = null; // Timestamp of last discovery
+  }
+
+  /**
+   * Get local network subnets from system interfaces
+   * @returns {Array} - Array of subnet prefixes (e.g., ['192.168.1', '10.0.0'])
+   */
+  getLocalSubnets() {
+    const subnets = new Set();
+    const interfaces = os.networkInterfaces();
+    
+    for (const [name, addrs] of Object.entries(interfaces)) {
+      for (const addr of addrs) {
+        if (addr.family === 'IPv4' && !addr.internal) {
+          // Extract subnet prefix (first 3 octets for /24, adjust for larger)
+          const parts = addr.address.split('.');
+          const prefix = parts.slice(0, 3).join('.');
+          subnets.add(prefix);
+          
+          // For larger subnets (like /16), add nearby subnets
+          if (addr.netmask === '255.255.0.0') {
+            const base = parseInt(parts[2]);
+            // Scan a wider range for /16 networks to catch devices on different subnets
+            for (let i = Math.max(0, base - 15); i <= Math.min(255, base + 15); i++) {
+              subnets.add(`${parts[0]}.${parts[1]}.${i}`);
+            }
+          }
+        }
+      }
+    }
+    
+    return Array.from(subnets);
+  }
+
+  /**
+   * Get ARP table entries with TP-Link MAC addresses
+   * @returns {Array} - Array of {ip, mac} for TP-Link devices
+   */
+  getArpTableTpLinkDevices() {
+    const tplinkDevices = [];
+    
+    try {
+      const arpOutput = execSync('arp -a', { encoding: 'utf8', timeout: 5000 });
+      const lines = arpOutput.split('\n');
+      
+      for (const line of lines) {
+        // Parse ARP table entries (Windows format: IP  MAC  Type)
+        const match = line.match(/(\d+\.\d+\.\d+\.\d+)\s+([0-9a-f-:]+)/i);
+        if (match) {
+          const ip = match[1];
+          const mac = match[2].toLowerCase();
+          
+          // Check if MAC belongs to TP-Link
+          const isTPLink = TPLINK_MAC_PREFIXES.some(prefix => 
+            mac.startsWith(prefix.toLowerCase())
+          );
+          
+          if (isTPLink) {
+            tplinkDevices.push({ ip, mac });
+            console.log(`ARP: Found TP-Link device at ${ip} (MAC: ${mac})`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error reading ARP table:', error.message);
+    }
+    
+    return tplinkDevices;
+  }
+
+  /**
+   * Check if a port is open on a host
+   * @param {string} ip - IP address
+   * @param {number} port - Port number
+   * @param {number} timeout - Timeout in ms
+   * @returns {Promise<boolean>}
+   */
+  checkPort(ip, port, timeout = 500) {
+    return new Promise((resolve) => {
+      const socket = new net.Socket();
+      socket.setTimeout(timeout);
+      
+      socket.on('connect', () => {
+        socket.destroy();
+        resolve(true);
+      });
+      
+      socket.on('timeout', () => {
+        socket.destroy();
+        resolve(false);
+      });
+      
+      socket.on('error', () => {
+        socket.destroy();
+        resolve(false);
+      });
+      
+      socket.connect(port, ip);
+    });
+  }
+
+  /**
+   * Scan a subnet for TP-Link devices
+   * @param {string} subnet - Subnet prefix (e.g., '192.168.1')
+   * @param {Function} progressCallback - Optional callback for progress updates
+   * @returns {Promise<Array>} - Array of found devices
+   */
+  async scanSubnetForTpLink(subnet, progressCallback) {
+    const found = [];
+    const batchSize = 50;
+    
+    for (let batch = 0; batch < 6; batch++) {
+      const start = batch * batchSize + 1;
+      const end = Math.min((batch + 1) * batchSize, 254);
+      
+      const promises = [];
+      for (let i = start; i <= end; i++) {
+        const ip = `${subnet}.${i}`;
+        promises.push(
+          Promise.all([
+            this.checkPort(ip, 80, 300),   // Tapo
+            this.checkPort(ip, 9999, 300)  // Kasa
+          ]).then(([port80, port9999]) => {
+            if (port80 || port9999) {
+              return { 
+                ip, 
+                tapoPort: port80, 
+                kasaPort: port9999,
+                type: port9999 ? 'kasa' : 'tapo'
+              };
+            }
+            return null;
+          })
+        );
+      }
+      
+      const results = await Promise.all(promises);
+      results.filter(r => r !== null).forEach(r => found.push(r));
+      
+      if (progressCallback) {
+        progressCallback(Math.round(((batch + 1) / 6) * 100));
+      }
+    }
+    
+    return found;
+  }
+
+  /**
+   * Verify a Tapo device by attempting to connect
+   * @param {string} ip - Device IP
+   * @param {string} username - Tapo username
+   * @param {string} password - Tapo password
+   * @returns {Promise<object|null>} - Device info or null
+   */
+  async verifyTapoDevice(ip, username, password) {
+    try {
+      const device = await loginDeviceByIp(username, password, ip);
+      const info = await device.getDeviceInfo();
+      return {
+        name: info.nickname || info.alias || 'Tapo Device',
+        model: info.model || 'Unknown',
+        ip: ip,
+        type: 'tapo',
+        deviceId: info.device_id || info.deviceId,
+        verified: true
+      };
+    } catch (error) {
+      console.log(`Could not verify Tapo device at ${ip}: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Unified device discovery - combines all methods
+   * @param {string} username - TP-Link username (for Tapo)
+   * @param {string} password - TP-Link password (for Tapo)
+   * @param {Function} progressCallback - Progress callback
+   * @returns {Promise<object>} - { kasa: [], tapo: [], unverified: [] }
+   */
+  async discoverAllDevices(username, password, progressCallback) {
+    const results = {
+      kasa: [],
+      tapo: [],
+      unverified: []
+    };
+    
+    const sendProgress = (stage, percent, message) => {
+      if (progressCallback) {
+        progressCallback({ stage, percent, message });
+      }
+      console.log(`[Discovery] ${stage}: ${message} (${percent}%)`);
+    };
+
+    try {
+      // Stage 1: Kasa UDP Discovery (0-25%)
+      sendProgress('kasa', 0, 'Starting Kasa discovery...');
+      results.kasa = await this.discoverDevices();
+      sendProgress('kasa', 25, `Found ${results.kasa.length} Kasa device(s)`);
+
+      // Stage 2: Check ARP table for TP-Link devices (25-30%)
+      sendProgress('arp', 25, 'Checking ARP table for TP-Link devices...');
+      const arpDevices = this.getArpTableTpLinkDevices();
+      sendProgress('arp', 30, `Found ${arpDevices.length} TP-Link MAC(s) in ARP table`);
+
+      // Stage 3: Network scan for devices with open ports (30-60%)
+      sendProgress('scan', 30, 'Scanning network for TP-Link devices...');
+      const subnets = this.getLocalSubnets();
+      let allScannedDevices = [];
+      
+      for (let i = 0; i < subnets.length; i++) {
+        const subnet = subnets[i];
+        sendProgress('scan', 30 + Math.round((i / subnets.length) * 30), `Scanning ${subnet}.x...`);
+        const found = await this.scanSubnetForTpLink(subnet);
+        allScannedDevices = allScannedDevices.concat(found);
+      }
+      sendProgress('scan', 60, `Found ${allScannedDevices.length} device(s) with TP-Link ports`);
+
+      // Stage 4: Get Tapo devices from cloud (60-70%)
+      let cloudDevices = [];
+      if (username && password) {
+        sendProgress('cloud', 60, 'Logging into TP-Link cloud...');
+        try {
+          this.tapoCloudClient = await cloudLogin(username, password);
+          const deviceList = await this.tapoCloudClient.listDevicesByType('SMART.TAPOPLUG');
+          cloudDevices = deviceList.map(d => ({
+            name: d.alias || d.deviceName || 'Unknown',
+            deviceId: d.deviceId,
+            mac: d.deviceMac,
+            model: d.deviceModel || d.deviceType
+          }));
+          sendProgress('cloud', 70, `Found ${cloudDevices.length} device(s) in cloud account`);
+        } catch (error) {
+          sendProgress('cloud', 70, `Cloud login failed: ${error.message}`);
+        }
+      } else {
+        sendProgress('cloud', 70, 'Skipping cloud (no credentials)');
+      }
+
+      // Stage 5: Verify Tapo devices by connecting (70-95%)
+      sendProgress('verify', 70, 'Verifying Tapo devices...');
+      
+      // Combine ARP and scanned devices, prefer ones with port 80 open
+      const candidateIps = new Set();
+      
+      // Add devices from ARP with TP-Link MACs
+      arpDevices.forEach(d => candidateIps.add(d.ip));
+      
+      // Add scanned devices with port 80 (Tapo) that aren't already Kasa
+      const kasaIps = new Set(results.kasa.map(k => k.ip));
+      allScannedDevices
+        .filter(d => d.tapoPort && !kasaIps.has(d.ip))
+        .forEach(d => candidateIps.add(d.ip));
+
+      // Remove router/gateway IPs (usually .1)
+      const candidateList = Array.from(candidateIps).filter(ip => !ip.endsWith('.1'));
+      
+      if (username && password && candidateList.length > 0) {
+        let verified = 0;
+        for (let i = 0; i < candidateList.length; i++) {
+          const ip = candidateList[i];
+          sendProgress('verify', 70 + Math.round((i / candidateList.length) * 25), 
+            `Verifying ${ip}...`);
+          
+          const device = await this.verifyTapoDevice(ip, username, password);
+          if (device) {
+            // Match with cloud device for name if possible
+            const cloudMatch = cloudDevices.find(c => 
+              c.deviceId === device.deviceId || 
+              c.name === device.name
+            );
+            if (cloudMatch) {
+              device.name = cloudMatch.name;
+              device.cloudMatched = true;
+            }
+            results.tapo.push(device);
+            verified++;
+          }
+        }
+        sendProgress('verify', 95, `Verified ${verified} Tapo device(s)`);
+      } else {
+        // Without credentials, add as unverified
+        candidateList.forEach(ip => {
+          results.unverified.push({
+            ip,
+            type: 'tapo',
+            name: 'Unverified Tapo Device',
+            model: 'Unknown',
+            verified: false
+          });
+        });
+        sendProgress('verify', 95, `${candidateList.length} unverified device(s) found`);
+      }
+
+      // Stage 6: Add cloud devices that weren't found locally (95-100%)
+      if (cloudDevices.length > 0) {
+        const foundDeviceIds = new Set(results.tapo.map(t => t.deviceId));
+        const notFound = cloudDevices.filter(c => !foundDeviceIds.has(c.deviceId));
+        
+        notFound.forEach(c => {
+          results.unverified.push({
+            name: c.name,
+            type: 'tapo',
+            ip: null,
+            model: c.model,
+            deviceId: c.deviceId,
+            cloudOnly: true,
+            verified: false
+          });
+        });
+        
+        if (notFound.length > 0) {
+          sendProgress('complete', 100, `${notFound.length} cloud device(s) not found on network`);
+        }
+      }
+
+      sendProgress('complete', 100, 
+        `Discovery complete: ${results.kasa.length} Kasa, ${results.tapo.length} Tapo, ${results.unverified.length} unverified`);
+
+      return results;
+    } catch (error) {
+      console.error('Discovery error:', error);
+      throw error;
+    }
   }
 
   /**
@@ -368,6 +712,12 @@ function connectElgatoStreamDeckSocket(inPort, inPluginUUID, inRegisterEvent, in
           await handleSendToPlugin(context, jsonObj.payload);
           break;
 
+        // Global settings received
+        case 'didReceiveGlobalSettings':
+          globalSettings = jsonObj.payload.settings || {};
+          console.log('Global settings received:', globalSettings);
+          break;
+
         default:
           break;
       }
@@ -440,6 +790,35 @@ async function handleWillAppear(context, settings) {
 }
 
 /**
+ * Send global settings to Stream Deck
+ */
+function setGlobalSettings(settings) {
+  globalSettings = { ...globalSettings, ...settings };
+  if (websocket && websocket.readyState === 1) {
+    const json = {
+      event: 'setGlobalSettings',
+      context: pluginUUID,
+      payload: globalSettings
+    };
+    websocket.send(JSON.stringify(json));
+    console.log('Global settings saved:', globalSettings);
+  }
+}
+
+/**
+ * Request global settings from Stream Deck
+ */
+function getGlobalSettings() {
+  if (websocket && websocket.readyState === 1) {
+    const json = {
+      event: 'getGlobalSettings',
+      context: pluginUUID
+    };
+    websocket.send(JSON.stringify(json));
+  }
+}
+
+/**
  * Handle sendToPlugin event - Process messages from Property Inspector
  * @param {string} context - Stream Deck context
  * @param {object} payload - Message payload
@@ -474,11 +853,111 @@ async function handleSendToPlugin(context, payload) {
         error: error.message
       });
     }
+  } else if (payload.action === 'discoverAllDevices') {
+    // Unified discovery - finds both Kasa and Tapo devices
+    console.log('Starting unified device discovery...');
+    
+    // Save credentials to global settings if provided
+    if (payload.username && payload.password) {
+      setGlobalSettings({
+        tapoEmail: payload.username,
+        tapoPassword: payload.password
+      });
+    }
+    
+    try {
+      const results = await deviceManager.discoverAllDevices(
+        payload.username,
+        payload.password,
+        (progress) => {
+          // Send progress updates to Property Inspector
+          deviceManager.sendToPropertyInspector(context, {
+            action: 'discoveryProgress',
+            ...progress
+          });
+        }
+      );
+      
+      // Cache the results with timestamp
+      deviceManager.cachedDiscoveryResults = results;
+      deviceManager.lastDiscoveryTime = Date.now();
+      
+      deviceManager.sendToPropertyInspector(context, {
+        action: 'allDevicesDiscovered',
+        kasa: results.kasa,
+        tapo: results.tapo,
+        unverified: results.unverified,
+        success: true
+      });
+    } catch (error) {
+      deviceManager.sendToPropertyInspector(context, {
+        action: 'allDevicesDiscovered',
+        kasa: [],
+        tapo: [],
+        unverified: [],
+        success: false,
+        error: error.message
+      });
+    }
+  } else if (payload.action === 'getCachedDevices') {
+    // Return cached discovery results if available
+    if (deviceManager.cachedDiscoveryResults) {
+      const cacheAge = Date.now() - deviceManager.lastDiscoveryTime;
+      deviceManager.sendToPropertyInspector(context, {
+        action: 'cachedDevicesRetrieved',
+        kasa: deviceManager.cachedDiscoveryResults.kasa,
+        tapo: deviceManager.cachedDiscoveryResults.tapo,
+        unverified: deviceManager.cachedDiscoveryResults.unverified,
+        cacheAge: Math.floor(cacheAge / 1000), // Age in seconds
+        success: true
+      });
+    } else {
+      deviceManager.sendToPropertyInspector(context, {
+        action: 'cachedDevicesRetrieved',
+        success: false,
+        message: 'No cached devices available'
+      });
+    }
+  } else if (payload.action === 'getGlobalCredentials') {
+    // Send global credentials to Property Inspector
+    deviceManager.sendToPropertyInspector(context, {
+      action: 'globalCredentialsRetrieved',
+      tapoEmail: globalSettings.tapoEmail || '',
+      tapoPassword: globalSettings.tapoPassword || ''
+    });
   }
 }
 
 // Global WebSocket requirement for Stream Deck SDK
 global.WebSocket = require('ws');
+
+// Parse command line arguments from Stream Deck
+function parseArgs() {
+  const args = {};
+  const argv = process.argv;
+  
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '-port' && argv[i + 1]) {
+      args.port = argv[i + 1];
+    } else if (argv[i] === '-pluginUUID' && argv[i + 1]) {
+      args.pluginUUID = argv[i + 1];
+    } else if (argv[i] === '-registerEvent' && argv[i + 1]) {
+      args.registerEvent = argv[i + 1];
+    } else if (argv[i] === '-info' && argv[i + 1]) {
+      args.info = argv[i + 1];
+    }
+  }
+  
+  return args;
+}
+
+// Initialize plugin when started by Stream Deck
+const args = parseArgs();
+if (args.port && args.pluginUUID && args.registerEvent) {
+  connectElgatoStreamDeckSocket(args.port, args.pluginUUID, args.registerEvent, args.info);
+  // Request global settings on startup
+  setTimeout(() => getGlobalSettings(), 1000);
+}
 
 // Export the entry point function
 module.exports = { connectElgatoStreamDeckSocket };
