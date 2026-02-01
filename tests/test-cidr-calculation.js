@@ -45,7 +45,26 @@ class SubnetCalculator {
           // Calculate all /24 subnets within this CIDR range
           const ipParts = addr.address.split('.').map(Number);
           const maskParts = addr.netmask.split('.').map(Number);
-          
+          const networkParts = networkAddr.split('.').map(Number);
+
+          // Skip link-local, loopback, carrier-NAT and non-private ranges by default
+          const shouldScan = (parts) => {
+            const a = parts[0];
+            const b = parts[1];
+            if (a === 127) return false; // loopback
+            if (a === 169 && b === 254) return false; // link-local
+            if (a === 100 && b >= 64 && b <= 127) return false; // carrier NAT
+            if (a === 10) return true;
+            if (a === 192 && b === 168) return true;
+            if (a === 172 && b >= 16 && b <= 31) return true;
+            return false;
+          };
+
+          if (!shouldScan(networkParts)) {
+            console.log(`    Skipping network ${networkAddr}/${cidr} (non-private or not useful)`);
+            continue;
+          }
+
           if (cidr >= 24) {
             // /24 or smaller - just scan this single /24 subnet
             const prefix = ipParts.slice(0, 3).join('.');
@@ -141,6 +160,17 @@ criticalSubnets.forEach(subnet => {
 });
 
 console.log('');
+// Verify link-local and other un-useful ranges are NOT included
+const disallowedPrefixes = ['169.', '127.', '100.64.'];
+disallowedPrefixes.forEach(prefix => {
+  const found = subnets.some(s => s.startsWith(prefix));
+  if (found) {
+    console.log(`✗ Found disallowed prefix ${prefix} in subnets - SHOULD be skipped`);
+  } else {
+    console.log(`✓ ${prefix} correctly excluded from scan list`);
+  }
+});
+
 console.log('All subnets:');
 subnets.forEach((subnet, i) => {
   if (i % 10 === 0) process.stdout.write('\n  ');

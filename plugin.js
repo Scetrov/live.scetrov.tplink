@@ -73,6 +73,35 @@ class DeviceManager {
   }
 
   /**
+   * Decide whether a network should be scanned by default
+   * Skips link-local (169.254.x.x), loopback (127.x.x.x), carrier-NAT (100.64.0.0/10),
+   * and any non-private network by default to avoid wasteful scanning.
+   * @param {Array<number>} networkParts - [a,b,c,d]
+   * @returns {boolean}
+   */
+  shouldScanNetwork(networkParts) {
+    const a = networkParts[0];
+    const b = networkParts[1];
+
+    // Skip loopback
+    if (a === 127) return false;
+
+    // Skip link-local (APIPA)
+    if (a === 169 && b === 254) return false;
+
+    // Skip carrier-grade NAT reserved block 100.64.0.0/10
+    if (a === 100 && b >= 64 && b <= 127) return false;
+
+    // Only scan private ranges by default (RFC1918)
+    if (a === 10) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+
+    // Otherwise skip non-private networks
+    return false;
+  }
+
+  /**
    * Get local network subnets from system interfaces with proper CIDR calculation
    * @returns {Array} - Array of subnet prefixes (e.g., ['192.168.1', '10.0.0'])
    */
@@ -94,6 +123,14 @@ class DeviceManager {
           const ipParts = addr.address.split('.').map(Number);
           const maskParts = addr.netmask.split('.').map(Number);
           
+          const networkParts = networkAddr.split('.').map(Number);
+
+          // Skip networks that are not useful to scan
+          if (!this.shouldScanNetwork(networkParts)) {
+            console.log(`    Skipping network ${networkAddr}/${cidr} (non-private or not useful)`);
+            continue;
+          }
+
           if (cidr >= 24) {
             // /24 or smaller - just scan this single /24 subnet
             const prefix = ipParts.slice(0, 3).join('.');
