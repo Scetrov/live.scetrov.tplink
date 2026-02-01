@@ -495,6 +495,41 @@ class DeviceManager {
       }
       sendProgress('scan', 60, `Found ${allScannedDevices.length} device(s) with TP-Link ports`);
 
+      // Add scanned Kasa devices (port 9999) that weren't found via UDP
+      const kasaIps = new Set(results.kasa.map(k => k.ip));
+      const scannedKasaDevices = allScannedDevices.filter(d => d.kasaPort && !kasaIps.has(d.ip));
+      
+      for (const device of scannedKasaDevices) {
+        try {
+          // Try to get device info via Kasa API
+          const kasaDevice = await this.kasaClient.getDevice({ host: device.ip });
+          const sysInfo = await kasaDevice.getSysInfo();
+          results.kasa.push({
+            name: sysInfo.alias || sysInfo.dev_name || 'Unknown Kasa Device',
+            type: 'kasa',
+            ip: device.ip,
+            model: sysInfo.model || sysInfo.type || 'Unknown',
+            deviceId: sysInfo.deviceId || sysInfo.hwId
+          });
+          console.log(`Added scanned Kasa device: ${device.ip}`);
+        } catch (error) {
+          // If we can't get full info, add as unverified
+          results.unverified.push({
+            ip: device.ip,
+            type: 'kasa',
+            name: 'Unverified Kasa Device',
+            model: 'Unknown',
+            verified: false,
+            source: 'port-scan'
+          });
+          console.log(`Kasa device at ${device.ip} found but could not verify: ${error.message}`);
+        }
+      }
+      
+      if (scannedKasaDevices.length > 0) {
+        sendProgress('scan', 60, `Added ${scannedKasaDevices.length} scanned Kasa device(s)`);
+      }
+
       // Stage 4: Get Tapo devices from cloud (60-70%)
       let cloudDevices = [];
       if (username && password) {
@@ -526,7 +561,7 @@ class DeviceManager {
       arpDevices.forEach(d => candidateIps.add(d.ip));
       
       // Add scanned devices with port 80 (Tapo) that aren't already Kasa
-      const kasaIps = new Set(results.kasa.map(k => k.ip));
+      // (kasaIps already defined above when processing scanned Kasa devices)
       allScannedDevices
         .filter(d => d.tapoPort && !kasaIps.has(d.ip))
         .forEach(d => candidateIps.add(d.ip));
