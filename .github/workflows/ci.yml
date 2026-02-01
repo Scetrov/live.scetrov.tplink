@@ -33,3 +33,20 @@ jobs:
 
       - name: Run unit tests
         run: npm test --silent
+
+  markdown-lint:
+    name: Markdown lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run markdownlint
+        uses: igorshubovych/markdownlint-action@v2
+        with:
+          config: |
+            MD022: true
+            MD031: true
+            MD032: true
+            MD007: true
+            MD040: true

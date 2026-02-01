@@ -4,6 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/Scetrov/live.scetrov.tplink?label=release)](https://github.com/Scetrov/live.scetrov.tplink/releases)
 [![License](https://img.shields.io/github/license/Scetrov/live.scetrov.tplink.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-18%20|%2020-blue.svg)](https://nodejs.org/)
+[![Integration (manual)](https://github.com/Scetrov/live.scetrov.tplink/actions/workflows/integration.yml/badge.svg)](https://github.com/Scetrov/live.scetrov.tplink/actions/workflows/integration.yml)
 
 Control your TP-Link Kasa and Tapo smart plugs directly from your Elgato Stream Deck. This plugin provides seamless integration with both product lines, supporting device discovery, power control, and real-time status updates.
 
@@ -31,13 +32,16 @@ Control your TP-Link Kasa and Tapo smart plugs directly from your Elgato Stream 
 
 - **Unified Discovery System**: Finds both Kasa and Tapo devices in one scan
 
-- **Multi-Method Detection**:
-- **Multi-Method Detection**:
+**Multi-Method Detection**:
 
    - UDP broadcast discovery for Kasa devices
+
    - ARP table scanning for TP-Link MAC addresses
+
    - Network port scanning (Port 80 for Tapo, Port 9999 for Kasa)
+
    - Cloud API integration for Tapo device names
+
    - Local verification with TP-Link account credentials
 
 - **Result Caching**: Discovered devices are cached to avoid repeated scans
@@ -79,21 +83,27 @@ Three action types for flexible control:
 
 ### 3. Discover Devices
 
-- Click **"Scan for All TP-Link Devices"**
- - The scan will:
+ - Click **"Scan for All TP-Link Devices"**
+
+- The scan will:
 
    - Take 30-60 seconds to complete
+
    - Show a progress bar with current stage
+
    - Find both Kasa and Tapo devices
+
    - Cache results for future use
 
 ### 4. Select Your Device
 
  - Choose a device from the discovered list:
 
-   - **Kasa Devices**: Ready to use immediately
-   - **Tapo Devices**: May require manual IP entry if not auto-detected
-   - **Unverified Devices**: Devices found via network scan but not verified
+  - **Kasa Devices**: Ready to use immediately
+
+  - **Tapo Devices**: May require manual IP entry if not auto-detected
+
+  - **Unverified Devices**: Devices found via network scan but not verified
 
  - The device name and IP will be saved to the button
 
@@ -127,50 +137,70 @@ Three action types for flexible control:
 
 The plugin uses a sophisticated tiered discovery approach:
 
--#### Stage 1: Kasa UDP Discovery (0-25%)
+#### Stage 1: Kasa UDP Discovery (0-25%)
 
 - Broadcasts to local network subnets
+
 - Fastest method for Kasa devices
+
 - Limited by Windows Firewall in some environments
 
--#### Stage 2: ARP Table Scan (25-30%)
+#### Stage 2: ARP Table Scan (25-30%)
 
 - Checks system ARP table for TP-Link MAC addresses
+
 - Identifies devices that have communicated with your computer
+
 - Supported MAC prefixes: 40-8d-5c, 98-da-c4, 50-c7-bf, b0-4e-26, 60-a4-b7, a8-42-a1, 3c-6a-9d, c0-c9-e3, 5c-e9-31, 54-af-97, 1c-3b-f3, b4-b0-24
 
--#### Stage 3: Network Port Scanning (30-60%)
+#### Stage 3: Network Port Scanning (30-60%)
 
 - Scans detected subnets for open ports:
+
    - Port 9999: Kasa devices
+
    - Port 80: Tapo devices
+
 - Automatically expands to scan ±15 subnets on /16 networks
+
 - Batched scanning for improved performance
 
--#### Stage 4: Cloud Discovery (60-80%)
+#### Stage 4: Cloud Discovery (60-80%)
 
 - Logs into TP-Link cloud with provided credentials
+
 - Retrieves device names and IDs from your account
+
 - Provides friendly names even when IPs aren't available
 
--#### Stage 5: Local Verification (80-100%)
+#### Stage 5: Local Verification (80-100%)
 
 - Attempts to verify Tapo devices via local login
+
 - Matches cloud devices with network-discovered IPs
+
 - Confirms device accessibility
 
 ### Caching System
 
 **Device Cache**:
+
 - Discovery results are cached in plugin memory
+
 - Cache persists until Stream Deck restarts
+
 - Subsequent Property Inspector opens show cached results instantly
+
 - Cache age is displayed on the scan button
 
 **When to Re-Scan**:
+
 - New devices added to your network
+
 - Device IP addresses change (DHCP renewal)
+
 - After network configuration changes
+
 - If cache is more than a few hours old
 
 ## Troubleshooting
@@ -259,6 +289,8 @@ The plugin uses a sophisticated tiered discovery approach:
 **Symptoms**: Button press doesn't control device
 
 **Checklist**:
+**Checklist**:
+
 1. Device type is correct (Kasa vs Tapo)
 2. IP address is valid and current
 3. Device is powered on and connected to network
