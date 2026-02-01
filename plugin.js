@@ -1038,6 +1038,32 @@ async function handleKeyDown(context, action, settings) {
   // Update key visual state if action succeeded
   if (newState !== null) {
     deviceManager.setState(context, newState);
+    
+    // Send updated status to property inspector
+    try {
+      const deviceInfo = deviceManager.devices.get(context);
+      if (deviceInfo) {
+        const { type, device } = deviceInfo;
+        let statusUpdate = { success: true, state: newState };
+        
+        if (type === 'kasa') {
+          const sysInfo = await device.getSysInfo();
+          statusUpdate.name = sysInfo.alias || 'Unknown';
+          statusUpdate.model = sysInfo.model || 'Unknown';
+        } else if (type === 'tapo') {
+          const info = await device.getDeviceInfo();
+          statusUpdate.name = info.nickname || info.alias || 'Unknown';
+          statusUpdate.model = info.model || 'Unknown';
+        }
+        
+        deviceManager.sendToPropertyInspector(context, {
+          action: 'deviceStatusRetrieved',
+          ...statusUpdate
+        });
+      }
+    } catch (error) {
+      console.error('Failed to send status update to PI:', error.message);
+    }
   }
 }
 
@@ -1274,15 +1300,21 @@ async function handleSendToPlugin(context, payload) {
           model: sysInfo.model || 'Unknown',
           state: sysInfo.relay_state === 1
         };
-      } else if (payload.deviceType === 'tapo' && payload.username && payload.password) {
-        const device = await loginDeviceByIp(payload.username, payload.password, payload.ip);
-        const info = await device.getDeviceInfo();
-        deviceInfo = {
-          success: true,
-          name: info.nickname || info.alias || 'Unknown',
-          model: info.model || 'Unknown',
-          state: info.device_on
-        };
+      } else if (payload.deviceType === 'tapo') {
+        // Use credentials from payload or global settings
+        const username = payload.username || globalSettings.tapoEmail;
+        const password = payload.password || globalSettings.tapoPassword;
+        
+        if (username && password) {
+          const device = await loginDeviceByIp(username, password, payload.ip);
+          const info = await device.getDeviceInfo();
+          deviceInfo = {
+            success: true,
+            name: info.nickname || info.alias || 'Unknown',
+            model: info.model || 'Unknown',
+            state: info.device_on
+          };
+        }
       }
       
       if (deviceInfo) {

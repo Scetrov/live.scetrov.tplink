@@ -924,7 +924,7 @@
      */
     function updateDeviceStatus() {
       if (settings.ip && settings.deviceType) {
-        // Request status from plugin
+        // Request status from plugin (will use global credentials if needed)
         sendToPlugin({
           action: 'getDeviceStatus',
           ip: settings.ip,
@@ -932,7 +932,8 @@
           username: settings.username,
           password: settings.password
         });
-      } else {
+      } else if (!settings.ip || !settings.deviceType) {
+        // Only hide if truly no device configured
         document.getElementById('deviceStatus').classList.add('hidden');
       }
     }
