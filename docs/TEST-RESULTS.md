@@ -2,27 +2,32 @@
 
 ## Summary
 
-I've created comprehensive test scripts to verify the device discovery functionality of the TP-Link libraries used in your Stream Deck plugin. The tests confirm that the libraries are working correctly, but no devices were found on the network.
+I've created comprehensive test scripts to verify the device discovery
+functionality of the TP-Link libraries used in your Stream Deck plugin. The
+tests confirm that the libraries are working correctly, but no devices were
+found on the network.
 
 ## Test Scripts Created
 
 ### 1. `test-quick.js` - Quick Test
+
 Fast verification of basic discovery functionality.
-```powershell
+
+````powershell
 npm run test:quick
-```
+```text
 
 ### 2. `test-device-discovery.js` - Comprehensive Test
 Full test suite with detailed output and device control verification.
 ```powershell
 npm test
-```
+```text
 
 ### 3. `test-diagnostics.js` - Diagnostic Tool
 Network diagnostics and detailed library testing.
 ```powershell
 npm run test:diagnostics
-```
+```text
 
 ## Test Results
 
@@ -60,23 +65,23 @@ Set your TP-Link account credentials:
 $env:TAPO_EMAIL="your@email.com"
 $env:TAPO_PASSWORD="yourpassword"
 npm run test:diagnostics
-```
+```text
 
 This will test if your devices are Tapo devices that require cloud authentication.
 
 ### Expected Output if Devices Are Found
 
 **Kasa device found:**
-```
+```json
 [FOUND] Device discovered at 192.168.1.100
   Name: Living Room Plug
   Model: HS100(US)
   IP: 192.168.1.100
   MAC: XX:XX:XX:XX:XX:XX
-```
+```text
 
 **Tapo device found:**
-```
+```text
 ✓ Cloud login successful
 Found 2 device(s)
 
@@ -84,7 +89,7 @@ Found 2 device(s)
   Model: P100
   IP: 192.168.1.101
   MAC: XX:XX:XX:XX:XX:XX
-```
+```text
 
 ## Plugin Code Analysis
 
@@ -114,7 +119,7 @@ If your devices use the Tapo app, provide credentials:
 $env:TAPO_EMAIL="your@email.com"
 $env:TAPO_PASSWORD="yourpassword"
 npm run test:diagnostics
-```
+```text
 
 ### 3. Check Network
 - Ensure devices are on same network as computer
@@ -125,7 +130,7 @@ npm run test:diagnostics
 For Kasa discovery, ensure UDP port 9999 is allowed:
 ```powershell
 New-NetFirewallRule -DisplayName "TP-Link Kasa Discovery" -Direction Inbound -Protocol UDP -LocalPort 9999 -Action Allow
-```
+```text
 
 ## Plugin Integration Testing
 
@@ -141,7 +146,7 @@ View plugin logs:
 ```powershell
 # Stream Deck logs location
 Get-Content "$env:APPDATA\Elgato\StreamDeck\logs\*.log" -Tail 50
-```
+```text
 
 ## Next Steps
 
@@ -157,3 +162,4 @@ The device discovery libraries are functioning correctly. The "Scanning..." issu
 - Tapo devices require credentials that haven't been provided to the test
 
 Run the tests with your Tapo credentials to verify if your devices are discovered.
+````

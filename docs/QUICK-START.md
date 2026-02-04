@@ -2,7 +2,7 @@
 
 ## 🎯 Quick Commands
 
-```powershell
+````powershell
 # Fast 5-second test
 npm run test:quick
 
@@ -13,7 +13,7 @@ npm run test:diagnostics
 $env:TAPO_EMAIL="your@email.com"
 $env:TAPO_PASSWORD="yourpassword"
 npm run test:diagnostics
-```
+```text
 
 ## 📁 Files Created
 
@@ -30,8 +30,8 @@ npm run test:diagnostics
 
 ## 🔍 What the Tests Found
 
-✅ **Libraries**: Working correctly  
-✅ **Plugin Code**: Logic is correct  
+✅ **Libraries**: Working correctly
+✅ **Plugin Code**: Logic is correct
 ⚠️ **Devices**: None found (0 Kasa, 0 Tapo)
 
 ## 💡 Next Step
@@ -42,8 +42,9 @@ Run with Tapo credentials to see if your devices are found:
 $env:TAPO_EMAIL="your@email.com"
 $env:TAPO_PASSWORD="yourpassword"
 npm run test:diagnostics
-```
+```text
 
 ## 📖 Read First
 
 Start with **SUMMARY.md** for complete explanation of findings.
+````

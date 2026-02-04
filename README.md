@@ -49,6 +49,17 @@ Three action types for flexible control:
 - **Turn On**: Always turn the device on
 - **Turn Off**: Always turn the device off
 
+### Real-Time State Synchronization
+
+- **Automatic State Polling**: Button state updates every 5 seconds to
+   reflect actual device state
+- **Prevents Out-of-Sync Issues**: If device is controlled outside Stream
+   Deck (app, voice, physical button), the Stream Deck button will
+   automatically update
+- **Smart Polling**: Only polls devices visible on your current Stream Deck
+   profile
+- **Instant Feedback**: State updates immediately when button is pressed
+
 ### Persistent Configuration
 
 - **Global Credentials**: TP-Link account credentials saved globally and

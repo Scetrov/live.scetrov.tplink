@@ -5,6 +5,7 @@ Use this checklist for every marketplace submission or update.
 ## Pre-Release Preparation
 
 ### Code Quality
+
 - [ ] All features implemented and tested locally
 - [ ] No console.log statements with sensitive data
 - [ ] Error handling implemented for all async operations
@@ -12,12 +13,14 @@ Use this checklist for every marketplace submission or update.
 - [ ] Code reviewed and cleaned up
 
 ### Version Management
+
 - [ ] Version number updated in `manifest.json`
 - [ ] Version number updated in `package.json`
 - [ ] Version numbers match in both files
 - [ ] Version follows semantic versioning (MAJOR.MINOR.PATCH)
 
 ### Documentation
+
 - [ ] README.md updated with new features
 - [ ] CHANGELOG created/updated with version changes
 - [ ] Breaking changes documented
@@ -25,6 +28,7 @@ Use this checklist for every marketplace submission or update.
 - [ ] Troubleshooting section updated
 
 ### Assets
+
 - [ ] All icons are 144x144px PNG
 - [ ] Icons have transparent backgrounds
 - [ ] Icons are clear and professional
@@ -32,6 +36,7 @@ Use this checklist for every marketplace submission or update.
 - [ ] All action icons exist (@2x versions)
 
 ### Dependencies
+
 - [ ] package.json dependencies are up to date
 - [ ] No security vulnerabilities (`npm audit`)
 - [ ] Production dependencies only (no devDependencies in package)
@@ -40,6 +45,7 @@ Use this checklist for every marketplace submission or update.
 ## Build Process
 
 ### Clean Build
+
 - [ ] Delete `node_modules/` directory
 - [ ] Delete `dist/` directory
 - [ ] Run `npm install` to get fresh dependencies
@@ -48,6 +54,7 @@ Use this checklist for every marketplace submission or update.
 - [ ] Package size is reasonable (< 10 MB)
 
 ### Package Verification
+
 - [ ] `.streamDeckPlugin` file created in `dist/`
 - [ ] Filename includes correct version number
 - [ ] File size is reasonable (check for bloat)
@@ -60,7 +67,7 @@ Use this checklist for every marketplace submission or update.
   - [ ] LICENSE present
   - [ ] images/ directory with all icons
   - [ ] node_modules/ with production deps only
-  - [ ] NO __tests__/ directory
+  - [ ] NO **tests**/ directory
   - [ ] NO tests/ directory
   - [ ] NO docs/ directory
   - [ ] NO .github/ directory
@@ -70,6 +77,7 @@ Use this checklist for every marketplace submission or update.
 ## Testing
 
 ### Local Installation Test
+
 - [ ] Close Stream Deck completely
 - [ ] Uninstall previous version (if exists)
 - [ ] Double-click `.streamDeckPlugin` file
@@ -77,6 +85,7 @@ Use this checklist for every marketplace submission or update.
 - [ ] Plugin appears in Stream Deck marketplace
 
 ### Functionality Tests
+
 - [ ] Add "Toggle" action to button
 - [ ] Add "Turn On" action to button
 - [ ] Add "Turn Off" action to button
@@ -84,6 +93,7 @@ Use this checklist for every marketplace submission or update.
 - [ ] UI renders correctly
 
 ### Authentication Tests
+
 - [ ] "Sign in to TP-Link" button works
 - [ ] Modal appears correctly
 - [ ] Can enter credentials
@@ -94,6 +104,7 @@ Use this checklist for every marketplace submission or update.
 - [ ] Credentials persist across reopens
 
 ### Discovery Tests
+
 - [ ] "Scan for Devices" starts discovery
 - [ ] Progress bar appears and updates
 - [ ] Kasa devices discovered (if available)
@@ -104,6 +115,7 @@ Use this checklist for every marketplace submission or update.
 - [ ] Devices organized by type (Kasa/Tapo)
 
 ### Advanced Options Tests
+
 - [ ] "Advanced Scan Options" button toggles section
 - [ ] Start IP and End IP inputs work
 - [ ] IP range info calculates correctly
@@ -111,6 +123,7 @@ Use this checklist for every marketplace submission or update.
 - [ ] Invalid IPs handled gracefully
 
 ### Device Control Tests
+
 - [ ] Select device from dropdown
 - [ ] Device status appears
 - [ ] Current state shows correctly (ON/OFF)
@@ -121,6 +134,7 @@ Use this checklist for every marketplace submission or update.
 - [ ] "Turn Off" action always turns off
 
 ### Persistence Tests
+
 - [ ] Close and reopen Property Inspector
 - [ ] Credentials still signed in
 - [ ] Discovered devices still cached
@@ -131,6 +145,7 @@ Use this checklist for every marketplace submission or update.
 - [ ] Buttons still control devices
 
 ### Error Handling Tests
+
 - [ ] Network disconnected - graceful error
 - [ ] Invalid credentials - error message
 - [ ] Device offline - handles gracefully
@@ -140,6 +155,7 @@ Use this checklist for every marketplace submission or update.
 ## Documentation Preparation
 
 ### Screenshots
+
 - [ ] Property Inspector with sign-in button
 - [ ] Authentication modal
 - [ ] Device discovery in progress
@@ -152,6 +168,7 @@ Use this checklist for every marketplace submission or update.
 - [ ] At least 3-5 screenshots prepared
 
 ### Marketplace Description
+
 - [ ] Short description written (< 120 chars)
 - [ ] Long description written with formatting
 - [ ] Features list is clear and compelling
@@ -160,6 +177,7 @@ Use this checklist for every marketplace submission or update.
 - [ ] Supported devices listed
 
 ### Support Materials
+
 - [ ] GitHub repository is public
 - [ ] README.md is comprehensive
 - [ ] Issues section enabled
@@ -170,11 +188,13 @@ Use this checklist for every marketplace submission or update.
 ## Submission Process
 
 ### Elgato Developer Portal
+
 - [ ] Developer account created/verified
 - [ ] Profile completed
 - [ ] Payment information set (if applicable)
 
 ### Submission Form
+
 - [ ] Plugin package uploaded
 - [ ] Plugin name correct: "TP-Link Smart Control"
 - [ ] Version correct: 2.0.0
@@ -190,6 +210,7 @@ Use this checklist for every marketplace submission or update.
 - [ ] Terms of service provided (if needed)
 
 ### Review Checklist
+
 - [ ] All fields completed accurately
 - [ ] No typos in descriptions
 - [ ] URLs are correct and accessible
@@ -197,6 +218,7 @@ Use this checklist for every marketplace submission or update.
 - [ ] Version number matches uploaded package
 
 ### Final Checks
+
 - [ ] Test package one more time
 - [ ] Review submission for completeness
 - [ ] Submit to Elgato
@@ -206,6 +228,7 @@ Use this checklist for every marketplace submission or update.
 ## Post-Submission
 
 ### Immediate Actions
+
 - [ ] Create Git tag for this version: `git tag v2.0.0`
 - [ ] Push tag to GitHub: `git push origin v2.0.0`
 - [ ] Create GitHub release with:
@@ -216,12 +239,14 @@ Use this checklist for every marketplace submission or update.
 - [ ] Update README.md badges (if applicable)
 
 ### Monitoring
+
 - [ ] Check developer portal for review status
 - [ ] Monitor email for Elgato communications
 - [ ] Be ready to respond to review feedback
 - [ ] Plan for updates if changes requested
 
 ### After Approval
+
 - [ ] Test download from marketplace
 - [ ] Verify marketplace listing appears correctly
 - [ ] Update GitHub README with marketplace link
@@ -233,11 +258,11 @@ Use this checklist for every marketplace submission or update.
 
 Use this table to track releases:
 
-| Version | Date | Status | Notes |
-|---------|------|--------|-------|
-| 2.0.0 | 2026-02-01 | Built | Initial marketplace release |
-| | | | Modern UI, unified discovery |
-| | | | |
+| Version | Date       | Status | Notes                        |
+| ------- | ---------- | ------ | ---------------------------- |
+| 2.0.0   | 2026-02-01 | Built  | Initial marketplace release  |
+|         |            |        | Modern UI, unified discovery |
+|         |            |        |                              |
 
 ## Notes
 
@@ -250,5 +275,4 @@ Add any version-specific notes here:
 
 ---
 
-**Last Updated:** February 1, 2026
-**Next Review:** Before next release
+**Last Updated:** February 1, 2026 **Next Review:** Before next release

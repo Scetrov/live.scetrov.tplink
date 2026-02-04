@@ -30,7 +30,8 @@ I've added extensive logging to help debug the issue. Follow these steps:
 ## Step 4: Check What the Console Shows
 
 ### If you see messages like this - GOOD:
-```
+
+````json
 [PI] Tapo login button clicked
 [PI] Username: tplink@richard-slater.co.uk
 [PI] Password length: 13
@@ -39,7 +40,7 @@ I've added extensive logging to help debug the issue. Follow these steps:
 [PI] Message sent
 [PI] Received message from plugin: {action: 'tapoDevicesDiscovered', ...}
 [PI] Handling tapoDevicesDiscovered - success: true
-```
+```text
 
 This means communication is working and we'll see if it succeeds.
 
@@ -55,7 +56,7 @@ After trying the scan, check Stream Deck logs:
 
 ```powershell
 Get-ChildItem "$env:APPDATA\Elgato\StreamDeck\logs" -Filter "*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | Get-Content -Tail 200 | Select-String -Pattern "TP-Link|Tapo|tplink"
-```
+```text
 
 ### Look for:
 - `TP-Link Plugin Loading - Version 1.0.1` (confirms plugin reloaded)
@@ -71,19 +72,19 @@ Get-ChildItem "$env:APPDATA\Elgato\StreamDeck\logs" -Filter "*.log" | Sort-Objec
 ## Most Likely Issues
 
 ### Issue 1: Stream Deck Not Restarted
-**Symptom**: Version 1.0.1 not in logs  
+**Symptom**: Version 1.0.1 not in logs
 **Fix**: Actually quit and restart Stream Deck
 
 ### Issue 2: WebSocket Not Connected
-**Symptom**: Plugin logs show messages sent but PI console shows nothing received  
+**Symptom**: Plugin logs show messages sent but PI console shows nothing received
 **Fix**: Check if property inspector is actually connected
 
 ### Issue 3: JavaScript Error
-**Symptom**: Red errors in browser console (F12)  
+**Symptom**: Red errors in browser console (F12)
 **Fix**: Look at the error message - might be syntax issue
 
 ### Issue 4: Plugin Crash
-**Symptom**: No plugin logs at all  
+**Symptom**: No plugin logs at all
 **Fix**: Check if there's a require() error or syntax error
 
 ## Quick Test
@@ -92,7 +93,7 @@ After restarting Stream Deck, run this to verify plugin loaded:
 
 ```powershell
 Get-ChildItem "$env:APPDATA\Elgato\StreamDeck\logs" -Filter "*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | Get-Content -Tail 50 | Select-String "Version 1.0.1"
-```
+```text
 
 If you see "Version 1.0.1", the plugin is loaded. If not, Stream Deck hasn't restarted properly.
 
@@ -104,3 +105,4 @@ Please share:
 3. **What happens** - does button stay "Logging in..." or does it change?
 
 This will tell us exactly where it's failing.
+````

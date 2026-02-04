@@ -36,11 +36,11 @@
       "PropertyInspectorPath": "property-inspector.html",
       "States": [
         {
-          "Image": "images/plug-toggle@2x",
+          "Image": "images/plug-toggle-off@2x",
           "Name": "Off"
         },
         {
-          "Image": "images/plug-toggle@2x",
+          "Image": "images/plug-toggle-on@2x",
           "Name": "On"
         }
       ]

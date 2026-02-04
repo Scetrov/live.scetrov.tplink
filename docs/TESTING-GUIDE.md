@@ -2,22 +2,26 @@
 
 ## 🎯 Purpose
 
-This test suite verifies the device discovery functionality for both Kasa and Tapo TP-Link devices independently from the Stream Deck plugin. Use these tests to:
+This test suite verifies the device discovery functionality for both Kasa and
+Tapo TP-Link devices independently from the Stream Deck plugin. Use these tests
+to:
 
-1. **Confirm libraries work** - Verify `tplink-smarthome-api` and `tp-link-tapo-connect` are functioning
+1. **Confirm libraries work** - Verify `tplink-smarthome-api` and
+   `tp-link-tapo-connect` are functioning
 2. **Find devices** - Discover which devices are available on your network
-3. **Debug plugin issues** - Isolate whether problems are with device discovery or Stream Deck integration
+3. **Debug plugin issues** - Isolate whether problems are with device discovery
+   or Stream Deck integration
 
 ---
 
 ## 📋 Available Tests
 
-| Test | Command | Purpose | Duration |
-|------|---------|---------|----------|
-| **Quick Test** | `npm run test:quick` | Fast basic discovery | 5 seconds |
-| **Comprehensive Test** | `npm test` | Full test with device control | 10+ seconds |
-| **Diagnostics** | `npm run test:diagnostics` | Network & library diagnostics | 10+ seconds |
-| **Mock Test** | `npm run test:mock` | Simulates plugin workflow | 5+ seconds |
+| Test                   | Command                    | Purpose                       | Duration    |
+| ---------------------- | -------------------------- | ----------------------------- | ----------- |
+| **Quick Test**         | `npm run test:quick`       | Fast basic discovery          | 5 seconds   |
+| **Comprehensive Test** | `npm test`                 | Full test with device control | 10+ seconds |
+| **Diagnostics**        | `npm run test:diagnostics` | Network & library diagnostics | 10+ seconds |
+| **Mock Test**          | `npm run test:mock`        | Simulates plugin workflow     | 5+ seconds  |
 
 ---
 
@@ -43,12 +47,13 @@ npm run test:diagnostics
 
 ### How to Know What You Have
 
-| Brand/App | Device Type | Authentication | Examples |
-|-----------|-------------|----------------|----------|
-| **Kasa app** | Kasa | None (local) | HS100, HS103, HS105, HS110 |
-| **Tapo app** | Tapo | TP-Link account | P100, P105, P110, P115 |
+| Brand/App    | Device Type | Authentication  | Examples                   |
+| ------------ | ----------- | --------------- | -------------------------- |
+| **Kasa app** | Kasa        | None (local)    | HS100, HS103, HS105, HS110 |
+| **Tapo app** | Tapo        | TP-Link account | P100, P105, P110, P115     |
 
-**Check your phone**: Open the app that controls your devices. That's your device type.
+**Check your phone**: Open the app that controls your devices. That's your
+device type.
 
 ---
 
@@ -65,9 +70,8 @@ Tapo devices found: 2
   2. Office Plug (192.168.1.102) - P100
 ```
 
-**✓ Libraries working correctly**  
-**✓ Devices are accessible**  
-**✓ Network configured properly**
+**✓ Libraries working correctly** **✓ Devices are accessible** **✓ Network
+configured properly**
 
 ### ⚠ No Devices Found
 
@@ -77,6 +81,7 @@ Tapo devices found: 0
 ```
 
 **Possible causes:**
+
 1. Devices not on network
 2. Devices powered off
 3. Wrong device type selected
@@ -90,10 +95,12 @@ Tapo devices found: 0
 ### Kasa Devices Not Found
 
 #### Check 1: Same Network
+
 - Computer and devices must be on the same Wi-Fi network
 - Check if devices work in Kasa app on your phone
 
 #### Check 2: Firewall
+
 Kasa discovery uses UDP port 9999. Allow it:
 
 ```powershell
@@ -101,16 +108,20 @@ New-NetFirewallRule -DisplayName "TP-Link Kasa Discovery" -Direction Inbound -Pr
 ```
 
 #### Check 3: Network Type
+
 Some networks block device discovery:
+
 - Corporate/work networks
 - Guest Wi-Fi networks
 - VLANs and isolated networks
 
-**Solution**: Use your home network or configure network to allow device discovery
+**Solution**: Use your home network or configure network to allow device
+discovery
 
 ### Tapo Devices Not Found
 
 #### Check 1: Credentials Provided
+
 ```powershell
 # Check if set
 $env:TAPO_EMAIL
@@ -122,12 +133,15 @@ $env:TAPO_PASSWORD="yourpassword"
 ```
 
 #### Check 2: Internet Connection
+
 Tapo requires cloud authentication. Verify:
+
 - Internet connection is active
 - No proxy blocking TP-Link servers
 - Firewall allows HTTPS outbound
 
 #### Check 3: Account Access
+
 - Use same email/password as Tapo mobile app
 - Verify devices appear in Tapo app
 - Check account has device permissions
@@ -143,6 +157,7 @@ npm run test:diagnostics
 ```
 
 This checks:
+
 - ✓ Network interfaces and IP addresses
 - ✓ UDP broadcast capability
 - ✓ Library versions
@@ -156,6 +171,7 @@ npm run test:mock
 ```
 
 This simulates:
+
 - ✓ Property Inspector → Plugin communication
 - ✓ Discovery function execution
 - ✓ Plugin → Property Inspector response
@@ -169,9 +185,11 @@ This simulates:
 
 ### If Tests Work But Plugin Scan Button Doesn't
 
-The tests confirm libraries work correctly. Plugin scan button stuck on "Scanning..." means:
+The tests confirm libraries work correctly. Plugin scan button stuck on
+"Scanning..." means:
 
 #### 1. WebSocket Connection Issue
+
 **Check**: Stream Deck plugin logs
 
 ```powershell
@@ -179,11 +197,13 @@ Get-Content "$env:APPDATA\Elgato\StreamDeck\logs\*.log" -Tail 100 | Select-Strin
 ```
 
 **Look for**:
+
 - "Plugin connected to Stream Deck"
 - "Received event: sendToPlugin"
 - "Starting Kasa device discovery"
 
 #### 2. Property Inspector Not Receiving Response
+
 **Check**: Browser console in property inspector
 
 1. Open Stream Deck
@@ -192,9 +212,11 @@ Get-Content "$env:APPDATA\Elgato\StreamDeck\logs\*.log" -Tail 100 | Select-Strin
 4. Look for console errors
 
 #### 3. JavaScript Error in Plugin
+
 **Check**: Look for errors in console output
 
 **Common issues**:
+
 - WebSocket not initialized
 - Payload formatting incorrect
 - Event handler not registered
@@ -205,17 +227,18 @@ Get-Content "$env:APPDATA\Elgato\StreamDeck\logs\*.log" -Tail 100 | Select-Strin
 
 Based on your setup, tests should find:
 
-| Device Type | Expected Count | Currently Found |
-|-------------|----------------|-----------------|
-| **Kasa** | 1 | Run test to verify |
-| **Tapo** | 2 | Run test to verify |
-| **Total** | 3 | Run test to verify |
+| Device Type | Expected Count | Currently Found    |
+| ----------- | -------------- | ------------------ |
+| **Kasa**    | 1              | Run test to verify |
+| **Tapo**    | 2              | Run test to verify |
+| **Total**   | 3              | Run test to verify |
 
 ---
 
 ## 🔐 Security Note
 
 **Tapo credentials** are stored:
+
 - In environment variables (temporary)
 - In Stream Deck settings (encrypted by Stream Deck)
 - Never in these test scripts
@@ -308,6 +331,7 @@ npm run test:diagnostics
 ### Step 3: Test Plugin
 
 If standalone tests find devices:
+
 1. Restart Stream Deck
 2. Try plugin scan button
 3. Check Stream Deck logs for errors
@@ -351,13 +375,19 @@ Get-NetFirewallRule | Where-Object DisplayName -like "*TP-Link*"
 ## ✅ Summary
 
 These tests confirm:
+
 - ✓ Libraries are installed correctly
 - ✓ Discovery functions work as designed
 - ✓ Plugin code logic is correct
 - ✓ Message formatting is proper
 
 The "Scanning..." issue is because:
+
 - No devices currently detectable on network, OR
 - Tapo devices require credentials to be discovered
 
 **Run the diagnostic test with Tapo credentials to verify device availability.**
+
+```
+
+```

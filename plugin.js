@@ -13,6 +13,8 @@ const os = require('os');
 let websocket = null;
 let pluginUUID = null;
 let globalSettings = {}; // Global settings shared across all buttons
+let activeContexts = new Map(); // Track visible buttons for state polling
+let pollingInterval = null; // State polling interval
 
 // TP-Link MAC address prefixes (OUI)
 const TPLINK_MAC_PREFIXES = [
@@ -42,6 +44,7 @@ class DeviceManager {
     this.tapoCloudClient = null; // Tapo cloud connection
     this.cachedDiscoveryResults = null; // Cache discovery results
     this.lastDiscoveryTime = null; // Timestamp of last discovery
+    this.pollingIntervalMs = 60000; // Poll every 60 seconds
   }
 
   /**
@@ -769,15 +772,27 @@ class DeviceManager {
         // Get current state and toggle
         const sysInfo = await device.getSysInfo();
         const currentState = sysInfo.relay_state === 1;
+        console.log(`[${context}] TOGGLE: Kasa current state = ${currentState ? 'ON' : 'OFF'} (relay_state=${sysInfo.relay_state})`);
         const newState = !currentState;
 
         await device.setPowerState(newState);
-        console.log(`[${context}] Kasa device toggled to ${newState ? 'ON' : 'OFF'}`);
-        return newState;
+        console.log(`[${context}] TOGGLE: Kasa command sent, new state should be ${newState ? 'ON' : 'OFF'}`);
+        
+        // Wait a moment for device to change state
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Verify the state changed by re-reading
+        const verifySysInfo = await device.getSysInfo();
+        const verifyState = verifySysInfo.relay_state === 1;
+        console.log(`[${context}] TOGGLE: Kasa verified state = ${verifyState ? 'ON' : 'OFF'} (relay_state=${verifySysInfo.relay_state})`);
+        
+        // Return the actual verified state, not the assumed state
+        return verifyState;
       } else if (type === 'tapo') {
         // Get current state and toggle
         const deviceInfo = await device.getDeviceInfo();
         const currentState = deviceInfo.device_on;
+        console.log(`[${context}] TOGGLE: Tapo current state = ${currentState ? 'ON' : 'OFF'} (device_on=${deviceInfo.device_on})`);
         const newState = !currentState;
 
         if (newState) {
@@ -785,8 +800,15 @@ class DeviceManager {
         } else {
           await device.turnOff();
         }
-        console.log(`[${context}] Tapo device toggled to ${newState ? 'ON' : 'OFF'}`);
-        return newState;
+        console.log(`[${context}] TOGGLE: Tapo command sent, new state should be ${newState ? 'ON' : 'OFF'}`);
+        
+        // Verify the state changed by re-reading
+        const verifyInfo = await device.getDeviceInfo();
+        const verifyState = verifyInfo.device_on;
+        console.log(`[${context}] TOGGLE: Tapo verified state = ${verifyState ? 'ON' : 'OFF'} (device_on=${verifyInfo.device_on})`);
+        
+        // Return the actual verified state, not the assumed state
+        return verifyState;
       }
 
       return null;
@@ -868,6 +890,25 @@ class DeviceManager {
   }
 
   /**
+   * Update device state from actual device and sync Stream Deck button
+   * @param {string} context - Stream Deck context identifier
+   * @returns {boolean|null} - Current device state or null if failed
+   */
+  async updateDeviceState(context) {
+    try {
+      const state = await this.getDeviceState(context);
+      if (state !== null) {
+        this.setState(context, state);
+        return state;
+      }
+      return null;
+    } catch (error) {
+      console.error(`[${context}] Failed to update device state:`, error.message);
+      return null;
+    }
+  }
+
+  /**
    * Remove device from manager
    * @param {string} context - Stream Deck context identifier
    */
@@ -895,12 +936,14 @@ class DeviceManager {
    * @param {boolean} state - Power state (true = on/state 1, false = off/state 0)
    */
   setState(context, state) {
+    const streamDeckState = state ? 1 : 0;
+    console.log(`[${context}] setState: device=${state ? 'ON' : 'OFF'}, streamDeckState=${streamDeckState}`);
     if (websocket) {
       websocket.send(JSON.stringify({
         event: 'setState',
         context: context,
         payload: {
-          state: state ? 1 : 0
+          state: streamDeckState
         }
       }));
     }
@@ -967,11 +1010,17 @@ function connectElgatoStreamDeckSocket(inPort, inPluginUUID, inRegisterEvent, in
         // Action appears on Stream Deck (initialize device)
         case 'willAppear':
           await handleWillAppear(context, settings);
+          activeContexts.set(context, settings);
+          startPolling();
           break;
 
         // Action disappears from Stream Deck (cleanup)
         case 'willDisappear':
           deviceManager.removeDevice(context);
+          activeContexts.delete(context);
+          if (activeContexts.size === 0) {
+            stopPolling();
+          }
           break;
 
         // Settings changed in Property Inspector
@@ -1080,10 +1129,39 @@ async function handleWillAppear(context, settings) {
 
   // Get and display current state
   if (device) {
-    const state = await deviceManager.getDeviceState(context);
-    if (state !== null) {
-      deviceManager.setState(context, state);
+    const state = await deviceManager.updateDeviceState(context);
+    console.log(`[${context}] Initial state retrieved: ${state !== null ? (state ? 'ON' : 'OFF') : 'UNKNOWN'}`);
+  } else {
+    console.log(`[${context}] Failed to initialize device, cannot retrieve state`);
+  }
+}
+
+/**
+ * Start polling device states for all active buttons
+ */
+function startPolling() {
+  if (pollingInterval) {
+    return; // Already polling
+  }
+
+  console.log('Starting device state polling...');
+  pollingInterval = setInterval(async () => {
+    for (const [context, settings] of activeContexts) {
+      if (deviceManager.devices.has(context)) {
+        await deviceManager.updateDeviceState(context);
+      }
     }
+  }, deviceManager.pollingIntervalMs);
+}
+
+/**
+ * Stop polling device states
+ */
+function stopPolling() {
+  if (pollingInterval) {
+    console.log('Stopping device state polling...');
+    clearInterval(pollingInterval);
+    pollingInterval = null;
   }
 }
 

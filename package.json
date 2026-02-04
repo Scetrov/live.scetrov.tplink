@@ -9,8 +9,12 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "testMatch": ["**/__tests__/**/*.js?(x)"],
-    "testPathIgnorePatterns": ["<rootDir>/__tests__/integration/"]
+    "testMatch": [
+      "**/__tests__/**/*.js?(x)"
+    ],
+    "testPathIgnorePatterns": [
+      "<rootDir>/__tests__/integration/"
+    ]
   },
   "keywords": [
     "stream-deck",
@@ -23,12 +27,13 @@
   "author": "scetrov",
   "license": "MIT",
   "dependencies": {
-    "tplink-smarthome-api": "^5.0.0",
     "tp-link-tapo-connect": "^2.0.8",
+    "tplink-smarthome-api": "^5.0.0",
     "ws": "^8.16.0"
-  }
-  ,"devDependencies": {
+  },
+  "devDependencies": {
     "jest": "^29.6.0",
-    "markdownlint-cli": "^0.32.0"
+    "markdownlint-cli": "^0.32.0",
+    "prettier": "^3.8.1"
   }
 }

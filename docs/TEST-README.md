@@ -1,16 +1,19 @@
 # Device Discovery Tests
 
-This directory contains test scripts to verify TP-Link device discovery functionality independently from the Stream Deck plugin.
+This directory contains test scripts to verify TP-Link device discovery
+functionality independently from the Stream Deck plugin.
 
 ## Test Files
 
 ### `test-quick.js`
+
 Quick test for basic device discovery functionality.
 
 **Run:**
-```powershell
+
+````powershell
 npm run test:quick
-```
+```text
 
 ### `test-device-discovery.js`
 Comprehensive test suite with detailed output and device control verification.
@@ -18,7 +21,7 @@ Comprehensive test suite with detailed output and device control verification.
 **Run:**
 ```powershell
 npm test
-```
+```text
 
 ## Testing Kasa Devices
 
@@ -30,14 +33,14 @@ Kasa devices are discovered via local network broadcast. No credentials required
 - No firewall blocking UDP broadcast on port 9999
 
 **Example output:**
-```
+```text
 Testing Kasa Device Discovery
 ==========================================================
 [FOUND] Device discovered at 192.168.1.100
   Name: Living Room Plug
   Model: HS100(US)
   IP: 192.168.1.100
-```
+```text
 
 ## Testing Tapo Devices
 
@@ -52,10 +55,10 @@ Tapo devices require cloud authentication with your TP-Link account.
 $env:TAPO_EMAIL="your@email.com"
 $env:TAPO_PASSWORD="yourpassword"
 npm run test:quick
-```
+```text
 
 **Example output:**
-```
+```text
 Testing Tapo Device Discovery
 ==========================================================
 ✓ Cloud login successful
@@ -65,7 +68,7 @@ Found 2 Tapo device(s) on account
   Name: Bedroom Plug
   Model: P100
   IP: 192.168.1.101
-```
+```text
 
 ## Expected Results
 
@@ -98,7 +101,7 @@ Enable verbose logging by setting:
 ```powershell
 $env:DEBUG="*"
 npm test
-```
+```text
 
 ## Integration with Plugin
 
@@ -106,3 +109,4 @@ If these tests pass but the plugin scan fails, the issue is likely in the Stream
 - WebSocket communication between property inspector and plugin
 - Message passing (sendToPlugin/sendToPropertyInspector)
 - Event handling in `plugin.js`
+````

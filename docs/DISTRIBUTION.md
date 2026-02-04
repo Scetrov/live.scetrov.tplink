@@ -1,13 +1,14 @@
 # Quick Distribution Guide
 
-This is a quick reference for building and distributing your TP-Link Stream Deck plugin.
+This is a quick reference for building and distributing your TP-Link Stream Deck
+plugin.
 
 ## Build the Plugin
 
-```powershell
+````powershell
 # From the plugin directory, run:
 .\build-plugin.ps1 -Clean
-```
+```text
 
 This creates: `dist/live.scetrov.tplink.v2.0.0.streamDeckPlugin`
 
@@ -76,3 +77,4 @@ This creates: `dist/live.scetrov.tplink.v2.0.0.streamDeckPlugin`
 ---
 
 For detailed submission instructions, see MARKETPLACE.md
+````

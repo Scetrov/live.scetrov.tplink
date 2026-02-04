@@ -1,6 +1,7 @@
 # Elgato Marketplace Submission Guide
 
-This document provides step-by-step instructions for submitting the TP-Link Smart Control plugin to the Elgato Marketplace.
+This document provides step-by-step instructions for submitting the TP-Link
+Smart Control plugin to the Elgato Marketplace.
 
 ## Pre-Submission Checklist
 
@@ -48,13 +49,13 @@ All icons must be PNG format with transparent backgrounds:
 
 Ensure your plugin is working correctly:
 
-```powershell
+````powershell
 # Test the plugin locally
 # Install in Stream Deck and verify all features work
 
 # Update version in manifest.json if needed
 # Current version: 2.0.0
-```
+```text
 
 ### 2. Run the Build Script
 
@@ -67,7 +68,7 @@ cd "c:\Users\mcp\AppData\Roaming\Elgato\StreamDeck\Plugins\live.scetrov.tplink.s
 
 # For a clean build (removes previous dist/)
 .\build-plugin.ps1 -Clean
-```
+```text
 
 The script will:
 
@@ -88,13 +89,13 @@ dist/live.scetrov.tplink.v2.0.0.streamDeckPlugin
 # 2. Double-click the .streamDeckPlugin file
 # 3. Stream Deck will open and install the plugin
 # 4. Verify all functionality works
-```
+```text
 
 ### 4. Package Contents Verification
 
 The package should contain:
 
-```
+```text
 live.scetrov.tplink.v2.0.0.streamDeckPlugin (ZIP file)
 ├── manifest.json
 ├── package.json
@@ -111,7 +112,7 @@ live.scetrov.tplink.v2.0.0.streamDeckPlugin (ZIP file)
     ├── tplink-smarthome-api/
     ├── tp-link-tapo-connect/
     └── ws/
-```
+```text
 
 The package should NOT contain:
 
@@ -186,7 +187,7 @@ Take high-quality screenshots showing:
 
 Use this template for the marketplace description:
 
-```
+```text
 Control your TP-Link Kasa and Tapo smart plugs directly from Stream Deck.
 
 FEATURES:
@@ -213,7 +214,7 @@ REQUIREMENTS:
 SUPPORTED DEVICES:
 • Kasa: HS100, HS103, HS105, HS110, KP303, and more
 • Tapo: P100, P105, P110, P115, and more
-```
+```text
 
 ### 5. Review and Submit
 
@@ -336,3 +337,4 @@ This plugin is released under the MIT License. See LICENSE file for details.
 
 For questions or support, please open an issue on GitHub:
 https://github.com/Scetrov/live.scetrov.tplink/issues
+````

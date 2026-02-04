@@ -3,18 +3,22 @@
 ## What Was Fixed
 
 The plugin had a bug in the Tapo API call:
+
 - ❌ **Before**: `cloudClient.getDeviceList()` (doesn't exist)
-- ✅ **After**: `cloudClient.listDevicesByType('SMART.TAPOPLUG')` (correct method)
+- ✅ **After**: `cloudClient.listDevicesByType('SMART.TAPOPLUG')` (correct
+  method)
 
 ## Test Results Confirm It Works
 
 The standalone test successfully found your 2 Tapo devices:
+
 1. ✅ Hallway Christmas Lights (P110M)
 2. ✅ Office - Right Hand Grow Light (P110M)
 
 ## Why It's Still Stuck on "Logging in..."
 
-**Stream Deck is running the OLD version of the plugin** that still has the bug. The plugin runs in Node.js inside Stream Deck and needs to be reloaded.
+**Stream Deck is running the OLD version of the plugin** that still has the bug.
+The plugin runs in Node.js inside Stream Deck and needs to be reloaded.
 
 ## 🔄 How to Fix
 
@@ -23,7 +27,6 @@ The standalone test successfully found your 2 Tapo devices:
 1. **Quit Stream Deck completely**
    - Right-click the Stream Deck tray icon
    - Select "Quit Stream Deck"
-   
 2. **Start Stream Deck again**
    - The plugin will reload with the fixed code
 
@@ -45,7 +48,7 @@ The standalone test successfully found your 2 Tapo devices:
 
 When you click "Login & Scan for Tapo Devices":
 
-```
+````text
 Button shows: "Logging in..."
   ↓
 Button shows: "Login & Scan for Tapo Devices" (back to normal)
@@ -53,7 +56,7 @@ Button shows: "Login & Scan for Tapo Devices" (back to normal)
 Device list appears:
   □ Hallway Christmas Lights (N/A) • P110M(UK)
   □ Office - Right Hand Grow Light (N/A) • P110M(UK)
-```
+```text
 
 ## Note About IP Addresses
 
@@ -69,17 +72,19 @@ Your Tapo devices show `IP: N/A` because:
 1. **Check Stream Deck logs**
    ```powershell
    Get-Content "$env:APPDATA\Elgato\StreamDeck\logs\*.log" -Tail 100 | Select-String "tapo|tplink"
-   ```
-   
+````
+
 2. **Look for errors like:**
    - "Failed to discover Tapo devices"
    - "cloudClient.getDeviceList is not a function"
    - WebSocket connection errors
 
 3. **Verify plugin file was updated**
+
    ```powershell
    Select-String -Path plugin.js -Pattern "listDevicesByType"
    ```
+
    Should show: `listDevicesByType('SMART.TAPOPLUG')`
 
 4. **Open Property Inspector Console**
@@ -105,4 +110,5 @@ Once you can see the devices:
 
 ---
 
-**TL;DR: Restart Stream Deck to load the fixed plugin code. The bug is fixed, Stream Deck just needs to reload it.**
+**TL;DR: Restart Stream Deck to load the fixed plugin code. The bug is fixed,
+Stream Deck just needs to reload it.**

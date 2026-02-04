@@ -2,26 +2,28 @@
 
 ## What I Created
 
-I've written comprehensive test scripts to verify the TP-Link device discovery functionality works correctly, independent of the Stream Deck plugin.
+I've written comprehensive test scripts to verify the TP-Link device discovery
+functionality works correctly, independent of the Stream Deck plugin.
 
 ## Test Scripts
 
 ### 1. **test-quick.js** - Quick Verification (5 seconds)
-```powershell
+
+````powershell
 npm run test:quick
-```
+```text
 Fast test to quickly check if devices can be found.
 
 ### 2. **test-device-discovery.js** - Comprehensive Suite (10+ seconds)
 ```powershell
 npm test
-```
+```text
 Full test with detailed output, device control verification, and comparison against expected devices.
 
 ### 3. **test-diagnostics.js** - Network Diagnostics (10+ seconds)
 ```powershell
 npm run test:diagnostics
-```
+```text
 Detailed diagnostic tool that checks:
 - Network interfaces and IP configuration
 - UDP broadcast capability (required for Kasa)
@@ -32,7 +34,7 @@ Detailed diagnostic tool that checks:
 ### 4. **test-mock.js** - Plugin Workflow Simulation (5+ seconds)
 ```powershell
 npm run test:mock
-```
+```text
 Simulates the complete plugin workflow to verify the code logic is correct.
 
 ## Test Results
@@ -88,7 +90,7 @@ $env:TAPO_PASSWORD="yourpassword"
 
 # Run diagnostic test
 npm run test:diagnostics
-```
+```text
 
 This will attempt to login to TP-Link cloud and discover your Tapo devices.
 
@@ -102,7 +104,7 @@ New-NetFirewallRule -DisplayName "TP-Link Kasa Discovery" -Direction Inbound -Pr
 
 # Run test again
 npm run test:diagnostics
-```
+```text
 
 ## Code Review Results
 
@@ -114,7 +116,7 @@ I reviewed the plugin code in detail:
 - **`handleSendToPlugin()`** - Properly handles scan requests from UI
 - **`sendToPropertyInspector()`** - Correctly sends results back to UI
 
-### ✅ property-inspector.html - UI Handling  
+### ✅ property-inspector.html - UI Handling
 - **Scan button** - Correctly sends `discoverDevices` action
 - **`handlePluginMessage()`** - Properly receives responses
 - **`displayDiscoveredDevices()`** - Shows devices or "No devices found" message
@@ -131,10 +133,10 @@ I reviewed the plugin code in detail:
 
 ### If Tests Find Devices
 
-```
+```text
 ✓ Kasa devices found: 1
 ✓ Tapo devices found: 2
-```
+```text
 
 **Great!** Libraries work correctly. If plugin scan still fails:
 - Check Stream Deck is running
@@ -144,10 +146,10 @@ I reviewed the plugin code in detail:
 
 ### If Tests Find NO Devices
 
-```
+```text
 ⚠ Kasa devices found: 0
 ⚠ Tapo devices found: 0
-```
+```text
 
 **This explains the "Scanning..." behavior.** The scan button works correctly but finds nothing.
 
@@ -186,12 +188,12 @@ Get-NetFirewallRule | Where-Object DisplayName -like "*TP-Link*"
 
 # Allow Kasa discovery through firewall
 New-NetFirewallRule -DisplayName "TP-Link Kasa Discovery" -Direction Inbound -Protocol UDP -LocalPort 9999 -Action Allow
-```
+```text
 
 ## Final Verdict
 
-**✅ Plugin Code: Working Correctly**  
-**✅ Libraries: Functioning Properly**  
+**✅ Plugin Code: Working Correctly**
+**✅ Libraries: Functioning Properly**
 **⚠️ Device Discovery: No Devices Found**
 
 The "Scanning..." issue is not a bug in the code. The scan functionality works as designed but returns empty results because no devices are being discovered on the network.
@@ -202,6 +204,7 @@ The "Scanning..." issue is not a bug in the code. The scan functionality works a
 $env:TAPO_EMAIL="your@email.com"
 $env:TAPO_PASSWORD="yourpassword"
 npm run test:diagnostics
-```
+```text
 
 This will confirm whether your devices can be discovered when proper authentication is provided.
+````

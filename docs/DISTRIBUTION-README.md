@@ -4,10 +4,8 @@ Your TP-Link Stream Deck plugin is now ready for Elgato Marketplace submission.
 
 ## 📦 Package Information
 
-**File:** `dist/live.scetrov.tplink.v2.0.0.streamDeckPlugin`
-**Size:** 1.28 MB
-**Version:** 2.0.0
-**Created:** February 1, 2026
+**File:** `dist/live.scetrov.tplink.v2.0.0.streamDeckPlugin` **Size:** 1.28 MB
+**Version:** 2.0.0 **Created:** February 1, 2026
 
 ## ✅ What's Included
 
@@ -46,26 +44,29 @@ Your distribution package contains:
 ## 🚀 Submit to Marketplace
 
 ### 1. Create Developer Account
+
 - Go to https://developer.elgato.com
 - Sign up or log in
 - Complete your developer profile
 
 ### 2. Submit Plugin
+
 - Click "Submit Plugin" in the developer portal
 - Upload: `dist/live.scetrov.tplink.v2.0.0.streamDeckPlugin`
 
 ### 3. Fill Out Submission Form
 
 **Basic Information:**
-```
+
+````text
 Plugin Name: TP-Link Smart Control
 Version: 2.0.0
 Category: Smart Home
 Author: Scetrov
-```
+```text
 
 **Description:**
-```
+```text
 Control your TP-Link Kasa and Tapo smart plugs directly from Stream Deck.
 
 FEATURES:
@@ -84,20 +85,20 @@ REQUIREMENTS:
 • TP-Link smart plug on the same network
 • TP-Link account (for Tapo devices)
 • Stream Deck software 6.0 or later
-```
+```text
 
 **Technical Details:**
-```
+```text
 Platforms: Windows 10+, macOS 10.15+
 Stream Deck: 6.0+
 Node.js: 20
-```
+```text
 
 **Links:**
-```
+```text
 Repository: https://github.com/Scetrov/live.scetrov.tplink
 Support: https://github.com/Scetrov/live.scetrov.tplink/issues
-```
+```text
 
 ### 4. Provide Screenshots (Recommended)
 
@@ -150,7 +151,7 @@ To release an update:
 npm cache clean --force
 Remove-Item node_modules -Recurse -Force
 .\build-plugin.ps1 -Clean
-```
+```text
 
 ### Installation Issues
 
@@ -197,3 +198,4 @@ Good luck with your submission! 🚀
 **Package Built:** February 1, 2026
 **Build Script:** build-plugin.ps1
 **Distribution Guide:** MARKETPLACE.md
+````
