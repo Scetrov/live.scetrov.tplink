@@ -3,7 +3,7 @@
  * Verify that device state polling and synchronization works correctly
  */
 
-const { describe, test, expect, beforeEach, afterEach, jest } = require('@jest/globals');
+const { describe, test, expect, beforeEach, afterEach } = require('@jest/globals');
 
 // Mock modules
 jest.mock('tplink-smarthome-api');
