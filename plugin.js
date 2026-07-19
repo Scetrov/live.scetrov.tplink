@@ -8,23 +8,20 @@ const { loginDeviceByIp, cloudLogin } = require('./lib/tapo/api');
 const net = require('net');
 const { execSync } = require('child_process');
 const os = require('os');
+const util = require('util');
 
 function sanitizeLogValue(value) {
   return String(value ?? '').replace(/[\u0000-\u001f\u007f-\u009f]/g, '');
 }
 
 function logDiagnostic(message, ...values) {
-  console.log(
-    sanitizeLogValue(message),
-    ...values.map(sanitizeLogValue)
-  );
+  const record = util.format(message, ...values);
+  console.log(sanitizeLogValue(record).replace(/[\r\n]/g, ''));
 }
 
 function logDiagnosticError(message, ...values) {
-  console.error(
-    sanitizeLogValue(message),
-    ...values.map(sanitizeLogValue)
-  );
+  const record = util.format(message, ...values);
+  console.error(sanitizeLogValue(record).replace(/[\r\n]/g, ''));
 }
 
 // Stream Deck plugin websocket
