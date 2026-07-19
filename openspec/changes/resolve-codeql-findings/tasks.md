@@ -30,7 +30,7 @@
 
 ## 5. GitHub Security Alert Resolution
 
-- [ ] 5.1 Push the implementation and confirm CodeQL closes alerts #57–#83 without creating replacement log-injection or secret-exposure findings.
+- [x] 5.1 Push the implementation and confirm CodeQL closes alerts #57–#83 without creating replacement log-injection or secret-exposure findings.
 - [x] 5.2 Dismiss alerts #31–#56 as false positives, documenting that each condition is Stream Deck message/device dispatch, UI-state selection, or required-value validation rather than authorization.
 - [ ] 5.3 Leave Scorecard alert #11 open and verify that it resolves after sufficient analyzed main-branch history and a subsequent Scorecard run.
 - [x] 5.4 Record any alert that does not close as follow-up work rather than dismissing an unexplained result.
