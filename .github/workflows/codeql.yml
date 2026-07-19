@@ -6,17 +6,19 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: '29 3 * * 4'
+    - cron: "29 3 * * 4"
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   analyze:
     name: Analyze JavaScript
     runs-on: ubuntu-latest
     timeout-minutes: 360
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -27,6 +29,7 @@ jobs:
         uses: github/codeql-action/init@7188fc363630916deb702c7fdcf4e481b751f97a # v4.37.1
         with:
           languages: javascript-typescript
+          queries: security-extended
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@7188fc363630916deb702c7fdcf4e481b751f97a # v4.37.1

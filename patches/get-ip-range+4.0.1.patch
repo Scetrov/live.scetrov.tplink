@@ -1,0 +1,35 @@
+diff --git a/node_modules/get-ip-range/lib/index.js b/node_modules/get-ip-range/lib/index.js
+index 5181af0..38f41f8 100644
+--- a/node_modules/get-ip-range/lib/index.js
++++ b/node_modules/get-ip-range/lib/index.js
+@@ -39,12 +39,12 @@ var getRangev6 = function (ip1, ip2) {
+     var ips = [];
+     var firstAddress = new ip_address_1.Address6(ip1);
+     var lastAddress = new ip_address_1.Address6(ip2);
+-    for (var i = firstAddress.bigInteger(); i <= lastAddress.bigInteger(); i++) {
+-        ips.push(ip_address_1.Address6.fromBigInteger(i).correctForm());
++    for (var i = firstAddress.bigInt(); i <= lastAddress.bigInt(); i++) {
++        ips.push(ip_address_1.Address6.fromBigInt(i).correctForm());
+     }
+     return ips;
+ };
+-var isCIDR = function (ipCIDR) { return Boolean(ipCIDR.parsedSubnet); };
++var isCIDR = function (ipCIDR) { return Boolean(ipCIDR && ipCIDR.parsedSubnet); };
+ var isRange = function (ipRange) { return ipRange.indexOf('-') !== -1; };
+ var getIPRange = function (ip1, ip2) {
+     if (process.env.MAX_RANGE && isNaN(parseInt(process.env.MAX_RANGE, 10))) {
+@@ -59,12 +59,12 @@ var getIPRange = function (ip1, ip2) {
+     if (ip2) {
+         // IPv4
+         var ip2v4 = getIPv4(ip2);
+-        if (ip1v4.valid && ip2v4.valid && !ip1v4.parsedSubnet && !ip2v4.parsedSubnet) {
++        if (ip1v4 && ip2v4 && !ip1v4.parsedSubnet && !ip2v4.parsedSubnet) {
+             return getRangev4(ip1v4.correctForm(), ip2v4.correctForm());
+         }
+         // IPv6
+         var ip2v6 = getIPv6(ip2);
+-        if (ip1v6.valid && ip2v6.valid && !ip1v6.parsedSubnet && !ip2v6.parsedSubnet) {
++        if (ip1v6 && ip2v6 && !ip1v6.parsedSubnet && !ip2v6.parsedSubnet) {
+             return getRangev6(ip1v6.correctForm(), ip2v6.correctForm());
+         }
+         // IPs do not match version, or are invalid

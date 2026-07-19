@@ -745,7 +745,7 @@ class DeviceManager {
 
       return null;
     } catch (error) {
-      console.error(`[${context}] Failed to initialize device:`, error.message);
+      console.error('[%s] Failed to initialize device: %s', context, error.message);
       this.showAlert(context);
       return null;
     }
@@ -813,7 +813,7 @@ class DeviceManager {
 
       return null;
     } catch (error) {
-      console.error(`[${context}] Failed to toggle device:`, error.message);
+      console.error('[%s] Failed to toggle device: %s', context, error.message);
       this.showAlert(context);
       return null;
     }
@@ -853,7 +853,7 @@ class DeviceManager {
 
       return null;
     } catch (error) {
-      console.error(`[${context}] Failed to set device state:`, error.message);
+      console.error('[%s] Failed to set device state: %s', context, error.message);
       this.showAlert(context);
       return null;
     }
@@ -884,7 +884,7 @@ class DeviceManager {
 
       return null;
     } catch (error) {
-      console.error(`[${context}] Failed to get device state:`, error.message);
+      console.error('[%s] Failed to get device state: %s', context, error.message);
       return null;
     }
   }
@@ -903,7 +903,7 @@ class DeviceManager {
       }
       return null;
     } catch (error) {
-      console.error(`[${context}] Failed to update device state:`, error.message);
+      console.error('[%s] Failed to update device state: %s', context, error.message);
       return null;
     }
   }
@@ -1122,7 +1122,7 @@ async function handleKeyDown(context, action, settings) {
  * @param {object} settings - Device settings
  */
 async function handleWillAppear(context, settings) {
-  console.log(`[${context}] Action appeared with settings:`, settings);
+  console.log('[%s] Action appeared for %s device', context, settings.deviceType || 'unconfigured');
 
   // Initialize device connection
   const device = await deviceManager.initializeDevice(context, settings);
@@ -1200,7 +1200,7 @@ function getGlobalSettings() {
  * @param {object} payload - Message payload
  */
 async function handleSendToPlugin(context, payload) {
-  console.log(`[${context}] Received from PI:`, payload);
+  console.log('[%s] Received action from PI: %s', context, payload.action || 'unknown');
 
   if (payload.action === 'discoverDevices') {
     console.log('Starting Kasa device discovery...');
