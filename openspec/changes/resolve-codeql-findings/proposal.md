@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD041 -->
+
 ## Why
 
 The repository has 54 open code-scanning findings: 27 actionable log-injection flows, 26 false-positive user-controlled-bypass alerts, and one temporary SAST-coverage warning. The actionable findings should be resolved now because externally influenced values can forge diagnostics and two affected log statements expose stored TP-Link credentials.

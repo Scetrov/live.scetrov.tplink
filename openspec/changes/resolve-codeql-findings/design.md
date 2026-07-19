@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD041 -->
+
 ## Context
 
 The plugin accepts Stream Deck events through a localhost WebSocket. Event metadata, property-inspector payloads, settings, device addresses, and error messages currently reach several `console` calls without a consistent log-boundary policy. CodeQL reports 27 log-injection paths, while two of those paths log the complete global-settings object containing TP-Link credentials. The codebase already has `sanitizeLogValue()` and focused unit tests, but usage is incomplete.

@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD041 -->
+
 ## ADDED Requirements
 
 ### Requirement: Property inspector receives credential-presence state only

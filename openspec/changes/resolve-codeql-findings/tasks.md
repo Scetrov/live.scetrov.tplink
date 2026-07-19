@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 MD022 MD032 MD041 -->
+
 ## 1. Safe Diagnostic Tests
 
 - [x] 1.1 Extend `sanitizeLogValue` tests to cover CR, LF, combined line breaks, selected control characters, nullish values, and preservation of ordinary printable text.
