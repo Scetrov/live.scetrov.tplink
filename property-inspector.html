@@ -675,13 +675,8 @@
      * Load global credentials and update auth button
      */
     function loadGlobalCredentials(payload) {
-      if (payload.tapoEmail && payload.tapoPassword) {
-        isSignedIn = true;
-        updateAuthButton();
-      } else {
-        isSignedIn = false;
-        updateAuthButton();
-      }
+      isSignedIn = payload.credentialsConfigured === true;
+      updateAuthButton();
     }
 
     /**
