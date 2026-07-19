@@ -4,7 +4,7 @@
  */
 
 const { Client: KasaClient } = require('tplink-smarthome-api');
-const { loginDeviceByIp, cloudLogin } = require('tp-link-tapo-connect');
+const { loginDeviceByIp, cloudLogin } = require('./lib/tapo/api');
 const net = require('net');
 const { execSync } = require('child_process');
 const os = require('os');

@@ -1,14 +1,14 @@
 const { DeviceManager } = require('../plugin');
 
-// Mock tp-link-tapo-connect loginDeviceByIp
-jest.mock('tp-link-tapo-connect', () => ({
+// Mock the vendored Tapo client's loginDeviceByIp
+jest.mock('../lib/tapo/api', () => ({
   loginDeviceByIp: jest.fn(async (email, pwd, ip) => ({
     getDeviceInfo: async () => ({ nickname: 'Fake Tapo', model: 'P110M', device_id: 'dev123' })
   })),
   cloudLogin: jest.fn()
 }));
 
-const { loginDeviceByIp } = require('tp-link-tapo-connect');
+const { loginDeviceByIp } = require('../lib/tapo/api');
 
 describe('Tapo verification', () => {
   test('verifyTapoDevice returns device info when login succeeds', async () => {

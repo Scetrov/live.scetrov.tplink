@@ -5,8 +5,7 @@
   "main": "plugin.js",
   "scripts": {
     "test": "jest --runInBand",
-    "lint:md": "markdownlint --config .markdownlint.json '**/*.md'",
-    "postinstall": "patch-package"
+    "lint:md": "markdownlint --config .markdownlint.json '**/*.md'"
   },
   "jest": {
     "testEnvironment": "node",
@@ -28,9 +27,11 @@
   "author": "scetrov",
   "license": "MIT",
   "dependencies": {
-    "patch-package": "8.0.1",
-    "tp-link-tapo-connect": "^2.0.15",
+    "@network-utils/arp-lookup": "^2.1.0",
+    "axios": "^1.18.1",
+    "macaddr": "^0.1.1",
     "tplink-smarthome-api": "^5.0.0",
+    "uuid": "^11.1.1",
     "ws": "^8.21.1"
   },
   "devDependencies": {
@@ -40,11 +41,6 @@
     "prettier": "^3.9.5"
   },
   "overrides": {
-    "axios": "^1.18.1",
-    "get-ip-range": "^4.0.1",
-    "ip": "npm:@webpod/ip@^0.6.1",
-    "ip-address": "^10.2.0",
-    "js-yaml": "^3.15.0",
-    "uuid": "^11.1.1"
+    "js-yaml": "^3.15.0"
   }
 }

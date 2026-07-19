@@ -54,12 +54,6 @@ if ($LASTEXITCODE -ne 0) {
     Write-Error "npm install failed"
     exit 1
 }
-npm run postinstall 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Pop-Location
-    Write-Error "dependency patching failed"
-    exit 1
-}
 Pop-Location
 
 Write-Host "Step 2: Copying plugin files..." -ForegroundColor Cyan
@@ -73,6 +67,7 @@ $includeItems = @(
     "README.md",
     "LICENSE",
     "images",
+    "lib",
     "node_modules"
 )
 
