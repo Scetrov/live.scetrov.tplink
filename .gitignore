@@ -40,3 +40,4 @@ temp/
 
 # agents
 .pi/
+.pi-subagents/
