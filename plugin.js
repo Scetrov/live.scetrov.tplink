@@ -9,6 +9,10 @@ const net = require('net');
 const { execSync } = require('child_process');
 const os = require('os');
 
+function sanitizeLogValue(value) {
+  return String(value ?? '').replace(/[\r\n]/g, '');
+}
+
 // Stream Deck plugin websocket
 let websocket = null;
 let pluginUUID = null;
@@ -745,7 +749,11 @@ class DeviceManager {
 
       return null;
     } catch (error) {
-      console.error('[%s] Failed to initialize device: %s', context, error.message);
+      console.error(
+        '[%s] Failed to initialize device: %s',
+        sanitizeLogValue(context),
+        sanitizeLogValue(error.message)
+      );
       this.showAlert(context);
       return null;
     }
@@ -813,7 +821,11 @@ class DeviceManager {
 
       return null;
     } catch (error) {
-      console.error('[%s] Failed to toggle device: %s', context, error.message);
+      console.error(
+        '[%s] Failed to toggle device: %s',
+        sanitizeLogValue(context),
+        sanitizeLogValue(error.message)
+      );
       this.showAlert(context);
       return null;
     }
@@ -853,7 +865,11 @@ class DeviceManager {
 
       return null;
     } catch (error) {
-      console.error('[%s] Failed to set device state: %s', context, error.message);
+      console.error(
+        '[%s] Failed to set device state: %s',
+        sanitizeLogValue(context),
+        sanitizeLogValue(error.message)
+      );
       this.showAlert(context);
       return null;
     }
@@ -884,7 +900,11 @@ class DeviceManager {
 
       return null;
     } catch (error) {
-      console.error('[%s] Failed to get device state: %s', context, error.message);
+      console.error(
+        '[%s] Failed to get device state: %s',
+        sanitizeLogValue(context),
+        sanitizeLogValue(error.message)
+      );
       return null;
     }
   }
@@ -903,7 +923,11 @@ class DeviceManager {
       }
       return null;
     } catch (error) {
-      console.error('[%s] Failed to update device state: %s', context, error.message);
+      console.error(
+        '[%s] Failed to update device state: %s',
+        sanitizeLogValue(context),
+        sanitizeLogValue(error.message)
+      );
       return null;
     }
   }
@@ -1122,7 +1146,11 @@ async function handleKeyDown(context, action, settings) {
  * @param {object} settings - Device settings
  */
 async function handleWillAppear(context, settings) {
-  console.log('[%s] Action appeared for %s device', context, settings.deviceType || 'unconfigured');
+  console.log(
+    '[%s] Action appeared for %s device',
+    sanitizeLogValue(context),
+    sanitizeLogValue(settings.deviceType || 'unconfigured')
+  );
 
   // Initialize device connection
   const device = await deviceManager.initializeDevice(context, settings);
@@ -1200,7 +1228,11 @@ function getGlobalSettings() {
  * @param {object} payload - Message payload
  */
 async function handleSendToPlugin(context, payload) {
-  console.log('[%s] Received action from PI: %s', context, payload.action || 'unknown');
+  console.log(
+    '[%s] Received action from PI: %s',
+    sanitizeLogValue(context),
+    sanitizeLogValue(payload.action || 'unknown')
+  );
 
   if (payload.action === 'discoverDevices') {
     console.log('Starting Kasa device discovery...');
@@ -1449,4 +1481,4 @@ if (args.port && args.pluginUUID && args.registerEvent) {
 }
 
 // Export the entry point function and DeviceManager for unit testing
-module.exports = { connectElgatoStreamDeckSocket, DeviceManager };
+module.exports = { connectElgatoStreamDeckSocket, DeviceManager, sanitizeLogValue };
