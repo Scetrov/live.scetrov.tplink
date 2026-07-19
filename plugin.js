@@ -10,7 +10,21 @@ const { execSync } = require('child_process');
 const os = require('os');
 
 function sanitizeLogValue(value) {
-  return String(value ?? '').replace(/[\r\n]/g, '');
+  return String(value ?? '').replace(/[\u0000-\u001f\u007f-\u009f]/g, '');
+}
+
+function logDiagnostic(message, ...values) {
+  console.log(
+    sanitizeLogValue(message),
+    ...values.map(sanitizeLogValue)
+  );
+}
+
+function logDiagnosticError(message, ...values) {
+  console.error(
+    sanitizeLogValue(message),
+    ...values.map(sanitizeLogValue)
+  );
 }
 
 // Stream Deck plugin websocket
@@ -19,6 +33,10 @@ let pluginUUID = null;
 let globalSettings = {}; // Global settings shared across all buttons
 let activeContexts = new Map(); // Track visible buttons for state polling
 let pollingInterval = null; // State polling interval
+
+function setWebSocketForTesting(socket) {
+  websocket = socket;
+}
 
 // TP-Link MAC address prefixes (OUI)
 const TPLINK_MAC_PREFIXES = [
@@ -116,7 +134,7 @@ class DeviceManager {
     const subnets = new Set();
     const interfaces = os.networkInterfaces();
     
-    console.log('Detecting network interfaces and calculating CIDR ranges...');
+    logDiagnostic('Detecting network interfaces and calculating CIDR ranges...');
     
     for (const [name, addrs] of Object.entries(interfaces)) {
       for (const addr of addrs) {
@@ -124,7 +142,7 @@ class DeviceManager {
           const cidr = this.netmaskToCIDR(addr.netmask);
           const networkAddr = this.getNetworkAddress(addr.address, addr.netmask);
           
-          console.log(`  Interface ${name}: ${addr.address}/${cidr} (network: ${networkAddr})`);
+          logDiagnostic(`  Interface ${name}: ${addr.address}/${cidr} (network: ${networkAddr})`);
           
           // Calculate all /24 subnets within this CIDR range
           const ipParts = addr.address.split('.').map(Number);
@@ -134,7 +152,7 @@ class DeviceManager {
 
           // Skip networks that are not useful to scan
           if (!this.shouldScanNetwork(networkParts)) {
-            console.log(`    Skipping network ${networkAddr}/${cidr} (non-private or not useful)`);
+            logDiagnostic(`    Skipping network ${networkAddr}/${cidr} (non-private or not useful)`);
             continue;
           }
 
@@ -142,7 +160,7 @@ class DeviceManager {
             // /24 or smaller - just scan this single /24 subnet
             const prefix = ipParts.slice(0, 3).join('.');
             subnets.add(prefix);
-            console.log(`    Adding /24 subnet: ${prefix}.x`);
+            logDiagnostic(`    Adding /24 subnet: ${prefix}.x`);
           } else if (cidr >= 16) {
             // Between /16 and /24 - calculate all /24s in the range
             const networkParts = networkAddr.split('.').map(Number);
@@ -151,7 +169,7 @@ class DeviceManager {
             
             if (cidr === 16) {
               // For /16 networks, scan ALL 256 subnets (devices can be anywhere)
-              console.log(`    CIDR /16: scanning all 256 /24 subnets in ${networkParts[0]}.${networkParts[1]}.0.0/16`);
+              logDiagnostic(`    CIDR /16: scanning all 256 /24 subnets in ${networkParts[0]}.${networkParts[1]}.0.0/16`);
               for (let i = 0; i < 256; i++) {
                 const prefix = `${networkParts[0]}.${networkParts[1]}.${i}`;
                 subnets.add(prefix);
@@ -159,7 +177,7 @@ class DeviceManager {
             } else {
               // For /17 through /23, calculate the exact range
               const thirdOctetStart = networkParts[2];
-              console.log(`    CIDR /${cidr}: scanning ${thirdOctetRange} /24 subnets starting at ${thirdOctetStart}`);
+              logDiagnostic(`    CIDR /${cidr}: scanning ${thirdOctetRange} /24 subnets starting at ${thirdOctetStart}`);
               
               for (let i = 0; i < thirdOctetRange && i < 256; i++) {
                 const thirdOctet = thirdOctetStart + i;
@@ -172,7 +190,7 @@ class DeviceManager {
           } else {
             // /15 or larger - too big, use heuristic approach
             // Scan ±32 subnets around the current interface IP
-            console.log(`    Large network (/${cidr}): using heuristic ±32 subnets`);
+            logDiagnostic(`    Large network (/${cidr}): using heuristic ±32 subnets`);
             const base = ipParts[2];
             for (let i = Math.max(0, base - 32); i <= Math.min(255, base + 32); i++) {
               subnets.add(`${ipParts[0]}.${ipParts[1]}.${i}`);
@@ -193,7 +211,7 @@ class DeviceManager {
       }
       return 0;
     });
-    console.log(`Total subnets to scan: ${subnetArray.length}`);
+    logDiagnostic(`Total subnets to scan: ${subnetArray.length}`);
     return subnetArray;
   }
 
@@ -222,12 +240,12 @@ class DeviceManager {
           
           if (isTPLink) {
             tplinkDevices.push({ ip, mac });
-            console.log(`ARP: Found TP-Link device at ${ip} (MAC: ${mac})`);
+            logDiagnostic(`ARP: Found TP-Link device at ${ip} (MAC: ${mac})`);
           }
         }
       }
     } catch (error) {
-      console.error('Error reading ARP table:', error.message);
+      logDiagnosticError('Error reading ARP table:', error.message);
     }
     
     return tplinkDevices;
@@ -330,7 +348,7 @@ class DeviceManager {
         verified: true
       };
     } catch (error) {
-      console.log(`Could not verify Tapo device at ${ip}: ${error.message}`);
+      logDiagnostic(`Could not verify Tapo device at ${ip}: ${error.message}`);
       return null;
     }
   }
@@ -348,13 +366,13 @@ class DeviceManager {
 
     // Validate IP addresses
     if (start.length !== 4 || end.length !== 4) {
-      console.error('Invalid IP address format');
+      logDiagnosticError('Invalid IP address format');
       return [];
     }
 
     // Validate that first two octets match (must be same /16 network)
     if (start[0] !== end[0] || start[1] !== end[1]) {
-      console.error('Start and End IP must be in the same /16 network (first two octets must match)');
+      logDiagnosticError('Start and End IP must be in the same /16 network (first two octets must match)');
       return [];
     }
 
@@ -363,14 +381,14 @@ class DeviceManager {
     const endNum = (end[0] << 24) + (end[1] << 16) + (end[2] << 8) + end[3];
 
     if (startNum > endNum) {
-      console.error('Start IP must be less than or equal to End IP');
+      logDiagnosticError('Start IP must be less than or equal to End IP');
       return [];
     }
 
     // Limit to 65536 IPs to prevent memory issues
     const count = endNum - startNum + 1;
     if (count > 65536) {
-      console.error('IP range too large (max 65536 addresses)');
+      logDiagnosticError('IP range too large (max 65536 addresses)');
       return [];
     }
 
@@ -384,7 +402,7 @@ class DeviceManager {
       }
     }
 
-    console.log(`Custom range: ${ips.length} IP addresses from ${startIp} to ${endIp}`);
+    logDiagnostic(`Custom range: ${ips.length} IP addresses from ${startIp} to ${endIp}`);
     return ips;
   }
 
@@ -455,7 +473,7 @@ class DeviceManager {
       if (progressCallback) {
         progressCallback({ stage, percent, message });
       }
-      console.log(`[Discovery] ${stage}: ${message} (${percent}%)`);
+      logDiagnostic(`[Discovery] ${stage}: ${message} (${percent}%)`);
     };
 
     try {
@@ -518,7 +536,7 @@ class DeviceManager {
             model: sysInfo.model || sysInfo.type || 'Unknown',
             deviceId: sysInfo.deviceId || sysInfo.hwId
           });
-          console.log(`Added scanned Kasa device: ${device.ip}`);
+          logDiagnostic(`Added scanned Kasa device: ${device.ip}`);
         } catch (error) {
           // If we can't get full info, add as unverified
           results.unverified.push({
@@ -529,7 +547,7 @@ class DeviceManager {
             verified: false,
             source: 'port-scan'
           });
-          console.log(`Kasa device at ${device.ip} found but could not verify: ${error.message}`);
+          logDiagnostic(`Kasa device at ${device.ip} found but could not verify: ${error.message}`);
         }
       }
       
@@ -640,7 +658,7 @@ class DeviceManager {
 
       return results;
     } catch (error) {
-      console.error('Discovery error:', error);
+      logDiagnosticError('Discovery error: %s', error.message);
       throw error;
     }
   }
@@ -655,7 +673,7 @@ class DeviceManager {
       const timeout = setTimeout(() => {
         this.kasaClient.stopDiscovery();
         this.discoveredDevices = discovered;
-        console.log(`Discovery complete: found ${discovered.length} device(s)`);
+        logDiagnostic(`Discovery complete: found ${discovered.length} device(s)`);
         resolve(discovered);
       }, 5000); // 5 second discovery window
 
@@ -669,9 +687,9 @@ class DeviceManager {
             deviceId: info.deviceId
           };
           discovered.push(deviceInfo);
-          console.log(`Discovered: ${deviceInfo.name} (${deviceInfo.ip})`);
+          logDiagnostic(`Discovered: ${deviceInfo.name} (${deviceInfo.ip})`);
         }).catch((err) => {
-          console.error('Error getting device info:', err);
+          logDiagnosticError('Error getting device info:', err);
         });
       });
     });
@@ -685,15 +703,15 @@ class DeviceManager {
    */
   async discoverTapoDevices(username, password) {
     try {
-      console.log('Logging in to TP-Link cloud...');
+      logDiagnostic('Logging in to TP-Link cloud...');
       
       // Login to cloud
       this.tapoCloudClient = await cloudLogin(username, password);
-      console.log('Cloud login successful');
+      logDiagnostic('Cloud login successful');
       
       // Get device list from cloud
       const deviceList = await this.tapoCloudClient.listDevicesByType('SMART.TAPOPLUG');
-      console.log(`Found ${deviceList.length} Tapo device(s) on account`);
+      logDiagnostic(`Found ${deviceList.length} Tapo device(s) on account`);
       
       // Format device list
       const discovered = deviceList.map(device => ({
@@ -706,7 +724,7 @@ class DeviceManager {
       
       return discovered;
     } catch (error) {
-      console.error('Failed to discover Tapo devices:', error.message);
+      logDiagnosticError('Failed to discover Tapo devices:', error.message);
       throw error;
     }
   }
@@ -721,7 +739,7 @@ class DeviceManager {
       const { ip, deviceType, username, password } = settings;
 
       if (!ip) {
-        console.log(`[${context}] No IP address configured`);
+        logDiagnostic(`[${context}] No IP address configured`);
         return null;
       }
 
@@ -730,12 +748,12 @@ class DeviceManager {
         // Kasa devices use local API without authentication
         const device = await this.kasaClient.getDevice({ host: ip });
         this.devices.set(context, { type: 'kasa', device });
-        console.log(`[${context}] Kasa device initialized at ${ip}`);
+        logDiagnostic(`[${context}] Kasa device initialized at ${ip}`);
         return device;
       } else if (deviceType === 'tapo') {
         // Tapo devices require authentication
         if (!username || !password) {
-          console.log(`[${context}] Tapo device requires username and password`);
+          logDiagnostic(`[${context}] Tapo device requires username and password`);
           this.showAlert(context);
           return null;
         }
@@ -743,13 +761,13 @@ class DeviceManager {
         // Login to Tapo device
         const device = await loginDeviceByIp(username, password, ip);
         this.devices.set(context, { type: 'tapo', device });
-        console.log(`[${context}] Tapo device initialized at ${ip}`);
+        logDiagnostic(`[${context}] Tapo device initialized at ${ip}`);
         return device;
       }
 
       return null;
     } catch (error) {
-      console.error(
+      logDiagnosticError(
         '[%s] Failed to initialize device: %s',
         sanitizeLogValue(context),
         sanitizeLogValue(error.message)
@@ -769,7 +787,7 @@ class DeviceManager {
       const deviceInfo = this.devices.get(context);
 
       if (!deviceInfo) {
-        console.log(`[${context}] Device not initialized`);
+        logDiagnostic(`[${context}] Device not initialized`);
         this.showAlert(context);
         return null;
       }
@@ -780,11 +798,11 @@ class DeviceManager {
         // Get current state and toggle
         const sysInfo = await device.getSysInfo();
         const currentState = sysInfo.relay_state === 1;
-        console.log(`[${context}] TOGGLE: Kasa current state = ${currentState ? 'ON' : 'OFF'} (relay_state=${sysInfo.relay_state})`);
+        logDiagnostic(`[${context}] TOGGLE: Kasa current state = ${currentState ? 'ON' : 'OFF'} (relay_state=${sysInfo.relay_state})`);
         const newState = !currentState;
 
         await device.setPowerState(newState);
-        console.log(`[${context}] TOGGLE: Kasa command sent, new state should be ${newState ? 'ON' : 'OFF'}`);
+        logDiagnostic(`[${context}] TOGGLE: Kasa command sent, new state should be ${newState ? 'ON' : 'OFF'}`);
         
         // Wait a moment for device to change state
         await new Promise(resolve => setTimeout(resolve, 200));
@@ -792,7 +810,7 @@ class DeviceManager {
         // Verify the state changed by re-reading
         const verifySysInfo = await device.getSysInfo();
         const verifyState = verifySysInfo.relay_state === 1;
-        console.log(`[${context}] TOGGLE: Kasa verified state = ${verifyState ? 'ON' : 'OFF'} (relay_state=${verifySysInfo.relay_state})`);
+        logDiagnostic(`[${context}] TOGGLE: Kasa verified state = ${verifyState ? 'ON' : 'OFF'} (relay_state=${verifySysInfo.relay_state})`);
         
         // Return the actual verified state, not the assumed state
         return verifyState;
@@ -800,7 +818,7 @@ class DeviceManager {
         // Get current state and toggle
         const deviceInfo = await device.getDeviceInfo();
         const currentState = deviceInfo.device_on;
-        console.log(`[${context}] TOGGLE: Tapo current state = ${currentState ? 'ON' : 'OFF'} (device_on=${deviceInfo.device_on})`);
+        logDiagnostic(`[${context}] TOGGLE: Tapo current state = ${currentState ? 'ON' : 'OFF'} (device_on=${deviceInfo.device_on})`);
         const newState = !currentState;
 
         if (newState) {
@@ -808,12 +826,12 @@ class DeviceManager {
         } else {
           await device.turnOff();
         }
-        console.log(`[${context}] TOGGLE: Tapo command sent, new state should be ${newState ? 'ON' : 'OFF'}`);
+        logDiagnostic(`[${context}] TOGGLE: Tapo command sent, new state should be ${newState ? 'ON' : 'OFF'}`);
         
         // Verify the state changed by re-reading
         const verifyInfo = await device.getDeviceInfo();
         const verifyState = verifyInfo.device_on;
-        console.log(`[${context}] TOGGLE: Tapo verified state = ${verifyState ? 'ON' : 'OFF'} (device_on=${verifyInfo.device_on})`);
+        logDiagnostic(`[${context}] TOGGLE: Tapo verified state = ${verifyState ? 'ON' : 'OFF'} (device_on=${verifyInfo.device_on})`);
         
         // Return the actual verified state, not the assumed state
         return verifyState;
@@ -821,7 +839,7 @@ class DeviceManager {
 
       return null;
     } catch (error) {
-      console.error(
+      logDiagnosticError(
         '[%s] Failed to toggle device: %s',
         sanitizeLogValue(context),
         sanitizeLogValue(error.message)
@@ -842,7 +860,7 @@ class DeviceManager {
       const deviceInfo = this.devices.get(context);
 
       if (!deviceInfo) {
-        console.log(`[${context}] Device not initialized`);
+        logDiagnostic(`[${context}] Device not initialized`);
         this.showAlert(context);
         return null;
       }
@@ -851,7 +869,7 @@ class DeviceManager {
 
       if (type === 'kasa') {
         await device.setPowerState(powerOn);
-        console.log(`[${context}] Kasa device set to ${powerOn ? 'ON' : 'OFF'}`);
+        logDiagnostic(`[${context}] Kasa device set to ${powerOn ? 'ON' : 'OFF'}`);
         return powerOn;
       } else if (type === 'tapo') {
         if (powerOn) {
@@ -859,13 +877,13 @@ class DeviceManager {
         } else {
           await device.turnOff();
         }
-        console.log(`[${context}] Tapo device set to ${powerOn ? 'ON' : 'OFF'}`);
+        logDiagnostic(`[${context}] Tapo device set to ${powerOn ? 'ON' : 'OFF'}`);
         return powerOn;
       }
 
       return null;
     } catch (error) {
-      console.error(
+      logDiagnosticError(
         '[%s] Failed to set device state: %s',
         sanitizeLogValue(context),
         sanitizeLogValue(error.message)
@@ -900,7 +918,7 @@ class DeviceManager {
 
       return null;
     } catch (error) {
-      console.error(
+      logDiagnosticError(
         '[%s] Failed to get device state: %s',
         sanitizeLogValue(context),
         sanitizeLogValue(error.message)
@@ -923,7 +941,7 @@ class DeviceManager {
       }
       return null;
     } catch (error) {
-      console.error(
+      logDiagnosticError(
         '[%s] Failed to update device state: %s',
         sanitizeLogValue(context),
         sanitizeLogValue(error.message)
@@ -938,7 +956,7 @@ class DeviceManager {
    */
   removeDevice(context) {
     this.devices.delete(context);
-    console.log(`[${context}] Device removed from manager`);
+    logDiagnostic(`[${context}] Device removed from manager`);
   }
 
   /**
@@ -961,7 +979,7 @@ class DeviceManager {
    */
   setState(context, state) {
     const streamDeckState = state ? 1 : 0;
-    console.log(`[${context}] setState: device=${state ? 'ON' : 'OFF'}, streamDeckState=${streamDeckState}`);
+    logDiagnostic(`[${context}] setState: device=${state ? 'ON' : 'OFF'}, streamDeckState=${streamDeckState}`);
     if (websocket) {
       websocket.send(JSON.stringify({
         event: 'setState',
@@ -1012,7 +1030,7 @@ function connectElgatoStreamDeckSocket(inPort, inPluginUUID, inRegisterEvent, in
       uuid: inPluginUUID
     };
     websocket.send(JSON.stringify(registerJSON));
-    console.log('Plugin connected to Stream Deck');
+    logDiagnostic('Plugin connected to Stream Deck');
   };
 
   // Handle messages from Stream Deck
@@ -1023,7 +1041,7 @@ function connectElgatoStreamDeckSocket(inPort, inPluginUUID, inRegisterEvent, in
       const context = jsonObj.context;
       const settings = jsonObj.payload?.settings || {};
 
-      console.log(`Received event: ${event}`);
+      logDiagnostic(`Received event: ${event}`);
 
       switch (event) {
         // Key pressed on Stream Deck
@@ -1060,23 +1078,27 @@ function connectElgatoStreamDeckSocket(inPort, inPluginUUID, inRegisterEvent, in
         // Global settings received
         case 'didReceiveGlobalSettings':
           globalSettings = jsonObj.payload.settings || {};
-          console.log('Global settings received:', globalSettings);
+          logDiagnostic(
+            'Global settings received (credentials configured: %s, custom IP range configured: %s)',
+            Boolean(globalSettings.tapoEmail && globalSettings.tapoPassword),
+            Boolean(globalSettings.startIp && globalSettings.endIp)
+          );
           break;
 
         default:
           break;
       }
     } catch (error) {
-      console.error('Error handling message:', error);
+      logDiagnosticError('Error handling message: %s', error.message);
     }
   };
 
   websocket.onerror = (error) => {
-    console.error('WebSocket error:', error);
+    logDiagnosticError('WebSocket error: %s', error.message);
   };
 
   websocket.onclose = () => {
-    console.log('WebSocket connection closed');
+    logDiagnostic('WebSocket connection closed');
   };
 }
 
@@ -1087,7 +1109,7 @@ function connectElgatoStreamDeckSocket(inPort, inPluginUUID, inRegisterEvent, in
  * @param {object} settings - Device settings
  */
 async function handleKeyDown(context, action, settings) {
-  console.log(`[${context}] Key pressed for action: ${action}`);
+  logDiagnostic(`[${context}] Key pressed for action: ${action}`);
 
   // Initialize device if not already done
   if (!deviceManager.devices.has(context)) {
@@ -1135,7 +1157,7 @@ async function handleKeyDown(context, action, settings) {
         });
       }
     } catch (error) {
-      console.error('Failed to send status update to PI:', error.message);
+      logDiagnosticError('Failed to send status update to PI:', error.message);
     }
   }
 }
@@ -1146,7 +1168,7 @@ async function handleKeyDown(context, action, settings) {
  * @param {object} settings - Device settings
  */
 async function handleWillAppear(context, settings) {
-  console.log(
+  logDiagnostic(
     '[%s] Action appeared for %s device',
     sanitizeLogValue(context),
     sanitizeLogValue(settings.deviceType || 'unconfigured')
@@ -1158,9 +1180,9 @@ async function handleWillAppear(context, settings) {
   // Get and display current state
   if (device) {
     const state = await deviceManager.updateDeviceState(context);
-    console.log(`[${context}] Initial state retrieved: ${state !== null ? (state ? 'ON' : 'OFF') : 'UNKNOWN'}`);
+    logDiagnostic(`[${context}] Initial state retrieved: ${state !== null ? (state ? 'ON' : 'OFF') : 'UNKNOWN'}`);
   } else {
-    console.log(`[${context}] Failed to initialize device, cannot retrieve state`);
+    logDiagnostic(`[${context}] Failed to initialize device, cannot retrieve state`);
   }
 }
 
@@ -1172,7 +1194,7 @@ function startPolling() {
     return; // Already polling
   }
 
-  console.log('Starting device state polling...');
+  logDiagnostic('Starting device state polling...');
   pollingInterval = setInterval(async () => {
     for (const [context, settings] of activeContexts) {
       if (deviceManager.devices.has(context)) {
@@ -1187,7 +1209,7 @@ function startPolling() {
  */
 function stopPolling() {
   if (pollingInterval) {
-    console.log('Stopping device state polling...');
+    logDiagnostic('Stopping device state polling...');
     clearInterval(pollingInterval);
     pollingInterval = null;
   }
@@ -1205,7 +1227,11 @@ function setGlobalSettings(settings) {
       payload: globalSettings
     };
     websocket.send(JSON.stringify(json));
-    console.log('Global settings saved:', globalSettings);
+    logDiagnostic(
+      'Global settings saved (credentials configured: %s, custom IP range configured: %s)',
+      Boolean(globalSettings.tapoEmail && globalSettings.tapoPassword),
+      Boolean(globalSettings.startIp && globalSettings.endIp)
+    );
   }
 }
 
@@ -1228,21 +1254,21 @@ function getGlobalSettings() {
  * @param {object} payload - Message payload
  */
 async function handleSendToPlugin(context, payload) {
-  console.log(
+  logDiagnostic(
     '[%s] Received action from PI: %s',
     sanitizeLogValue(context),
     sanitizeLogValue(payload.action || 'unknown')
   );
 
   if (payload.action === 'discoverDevices') {
-    console.log('Starting Kasa device discovery...');
+    logDiagnostic('Starting Kasa device discovery...');
     const devices = await deviceManager.discoverDevices();
     deviceManager.sendToPropertyInspector(context, {
       action: 'devicesDiscovered',
       devices: devices
     });
   } else if (payload.action === 'discoverTapoDevices') {
-    console.log('Starting Tapo device discovery...');
+    logDiagnostic('Starting Tapo device discovery...');
     try {
       const devices = await deviceManager.discoverTapoDevices(
         payload.username,
@@ -1263,7 +1289,7 @@ async function handleSendToPlugin(context, payload) {
     }
   } else if (payload.action === 'discoverAllDevices') {
     // Unified discovery - finds both Kasa and Tapo devices
-    console.log('Starting unified device discovery...');
+    logDiagnostic('Starting unified device discovery...');
     
     // Use credentials from global settings if not provided
     const username = globalSettings.tapoEmail || null;
@@ -1274,7 +1300,7 @@ async function handleSendToPlugin(context, payload) {
     const endIp = payload.endIp || globalSettings.endIp || null;
     
     if (startIp && endIp) {
-      console.log(`Using custom IP range: ${startIp} - ${endIp}`);
+      logDiagnostic(`Using custom IP range: ${startIp} - ${endIp}`);
     }
     
     try {
@@ -1361,11 +1387,10 @@ async function handleSendToPlugin(context, payload) {
       });
     }
   } else if (payload.action === 'getGlobalCredentials') {
-    // Send global credentials to Property Inspector
+    // Send credential presence to Property Inspector without exposing secrets.
     deviceManager.sendToPropertyInspector(context, {
       action: 'globalCredentialsRetrieved',
-      tapoEmail: globalSettings.tapoEmail || '',
-      tapoPassword: globalSettings.tapoPassword || ''
+      credentialsConfigured: Boolean(globalSettings.tapoEmail && globalSettings.tapoPassword)
     });
   } else if (payload.action === 'getGlobalIpRange') {
     // Send global IP range to Property Inspector
@@ -1380,24 +1405,28 @@ async function handleSendToPlugin(context, payload) {
       tapoEmail: payload.email,
       tapoPassword: payload.password
     });
-    console.log('Credentials saved to global settings');
+    logDiagnostic('Credentials saved to global settings');
   } else if (payload.action === 'clearCredentials') {
     // Clear credentials from global settings
     setGlobalSettings({
       tapoEmail: '',
       tapoPassword: ''
     });
-        console.log('Credentials cleared from global settings');
+        logDiagnostic('Credentials cleared from global settings');
   } else if (payload.action === 'saveIpRange') {
     // Save IP range to global settings
     setGlobalSettings({
       startIp: payload.startIp || '',
       endIp: payload.endIp || ''
     });
-    console.log(`IP range saved to global settings: ${payload.startIp} - ${payload.endIp}`);
+    logDiagnostic(
+      'IP range saved to global settings: %s - %s',
+      payload.startIp,
+      payload.endIp
+    );
   } else if (payload.action === 'getDeviceStatus') {
     // Get current device status
-    console.log(`Getting status for device at ${payload.ip}`);
+    logDiagnostic('Getting status for device at %s', payload.ip);
     try {
       let deviceInfo = null;
       
@@ -1439,7 +1468,7 @@ async function handleSendToPlugin(context, payload) {
         });
       }
     } catch (error) {
-      console.error('Error getting device status:', error.message);
+      logDiagnosticError('Error getting device status:', error.message);
       deviceManager.sendToPropertyInspector(context, {
         action: 'deviceStatusRetrieved',
         success: false,
@@ -1481,4 +1510,11 @@ if (args.port && args.pluginUUID && args.registerEvent) {
 }
 
 // Export the entry point function and DeviceManager for unit testing
-module.exports = { connectElgatoStreamDeckSocket, DeviceManager, sanitizeLogValue };
+module.exports = {
+  connectElgatoStreamDeckSocket,
+  DeviceManager,
+  handleSendToPlugin,
+  sanitizeLogValue,
+  setGlobalSettings,
+  setWebSocketForTesting,
+};
