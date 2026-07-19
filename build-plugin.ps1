@@ -48,7 +48,7 @@ New-Item -ItemType Directory -Path $tempDir | Out-Null
 
 Write-Host "Step 1: Installing dependencies..." -ForegroundColor Cyan
 Push-Location $pluginDir
-npm install --production --no-optional 2>&1 | Out-Null
+npm install --production --no-optional --ignore-scripts 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) {
     Pop-Location
     Write-Error "npm install failed"
@@ -67,6 +67,7 @@ $includeItems = @(
     "README.md",
     "LICENSE",
     "images",
+    "lib",
     "node_modules"
 )
 

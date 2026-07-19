@@ -1,0 +1,7 @@
+# Require maintainer review for all repository changes.
+* @Scetrov
+
+/.github/ @Scetrov
+/package.json @Scetrov
+/package-lock.json @Scetrov
+/plugin.js @Scetrov

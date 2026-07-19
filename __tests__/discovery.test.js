@@ -1,13 +1,13 @@
 const { DeviceManager } = require('../plugin');
 
-jest.mock('tp-link-tapo-connect', () => ({
+jest.mock('../lib/tapo/api', () => ({
   cloudLogin: jest.fn(async (u, p) => ({
     listDevicesByType: async () => ([{ alias: 'CloudPlug', deviceId: 'cloud1', deviceMac: 'aa:bb:cc' }])
   })),
   loginDeviceByIp: jest.fn()
 }));
 
-const { cloudLogin } = require('tp-link-tapo-connect');
+const { cloudLogin } = require('../lib/tapo/api');
 
 describe('Unified discovery (mocked internals)', () => {
   test('discoverAllDevices composes stages and returns aggregated results', async () => {

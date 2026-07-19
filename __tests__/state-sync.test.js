@@ -7,7 +7,7 @@ const { describe, test, expect, beforeEach, afterEach } = require('@jest/globals
 
 // Mock modules
 jest.mock('tplink-smarthome-api');
-jest.mock('tp-link-tapo-connect');
+jest.mock('../lib/tapo/api');
 jest.mock('ws');
 
 describe('State Synchronization', () => {
