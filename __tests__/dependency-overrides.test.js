@@ -8,10 +8,10 @@ describe("secure Tapo client dependencies", () => {
 
   test("client dependencies retain their expected CommonJS APIs", () => {
     const axios = require("axios");
-    const uuid = require("uuid");
+    const { randomUUID } = require("crypto");
 
     expect(typeof axios).toBe("function");
     expect(typeof axios.create).toBe("function");
-    expect(typeof uuid.v4).toBe("function");
+    expect(typeof randomUUID).toBe("function");
   });
 });

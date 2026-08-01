@@ -31,7 +31,6 @@
     "axios": "^1.18.1",
     "macaddr": "^0.1.1",
     "tplink-smarthome-api": "^5.0.0",
-    "uuid": "^11.1.1",
     "ws": "^8.21.1"
   },
   "devDependencies": {
