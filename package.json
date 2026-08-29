@@ -28,7 +28,7 @@
   "license": "MIT",
   "dependencies": {
     "@network-utils/arp-lookup": "^2.1.0",
-    "axios": "^1.19.0",
+    "axios": "^1.20.0",
     "macaddr": "^0.1.1",
     "tplink-smarthome-api": "^5.0.0",
     "ws": "^8.21.3"
