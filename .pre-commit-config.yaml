@@ -5,10 +5,12 @@ repos:
         name: Markdown lint
         entry: npm run lint:md
         language: system
+        pass_filenames: false
         stages: [commit]
 
       - id: npm-test
         name: Run unit tests
         entry: npm test --silent -- --passWithNoTests
         language: system
+        pass_filenames: false
         stages: [commit]
