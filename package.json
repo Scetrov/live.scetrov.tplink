@@ -45,7 +45,9 @@
     },
     "markdownlint-cli": {
       "js-yaml": "5.4.2",
-      "minimatch": "10.2.6"
+      "katex": "0.18.2",
+      "minimatch": "10.2.6",
+      "smol-toml": "1.9.1"
     }
   }
 }
