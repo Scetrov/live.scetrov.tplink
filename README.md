@@ -3,7 +3,7 @@
 [![CI](https://github.com/Scetrov/live.scetrov.tplink/actions/workflows/ci.yml/badge.svg)](https://github.com/Scetrov/live.scetrov.tplink/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/Scetrov/live.scetrov.tplink?label=release)](https://github.com/Scetrov/live.scetrov.tplink/releases)
 [![License](https://img.shields.io/github/license/Scetrov/live.scetrov.tplink.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-18%20|%2020-blue.svg)](https://nodejs.org/)
+[![Node](https://img.shields.io/badge/node-26-blue.svg)](https://nodejs.org/)
 [![Integration (manual)](https://github.com/Scetrov/live.scetrov.tplink/actions/workflows/integration.yml/badge.svg)](https://github.com/Scetrov/live.scetrov.tplink/actions/workflows/integration.yml)
 
 Control your TP-Link Kasa and Tapo smart plugs directly from your Elgato
@@ -284,9 +284,19 @@ The plugin uses a sophisticated tiered discovery approach:
 
 ### Prerequisites
 
-- Node.js 20 or higher
+- Node.js 26 or higher
 - Elgato Stream Deck software
 - TP-Link Kasa and/or Tapo devices for testing
+
+### Switching Node versions
+
+The project pins Node 26 via `.nvmrc` and `.tool-versions`.
+
+| Tool | Command |
+| :--- | :------- |
+| nvm | `nvm use` |
+| fnm | `fnm use` |
+| mise | `mise use` (auto) |
 
 ### Project Structure
 
