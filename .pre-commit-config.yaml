@@ -6,11 +6,11 @@ repos:
         entry: npm run lint:md
         language: system
         pass_filenames: false
-        stages: [commit]
+        stages: [pre-commit]
 
       - id: npm-test
         name: Run unit tests
         entry: npm test --silent -- --passWithNoTests
         language: system
         pass_filenames: false
-        stages: [commit]
+        stages: [pre-commit]
