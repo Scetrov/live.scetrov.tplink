@@ -1,6 +1,9 @@
 {
   "name": "live.scetrov.tplink",
   "version": "2.0.0",
+  "engines": {
+    "node": ">=26.0.0"
+  },
   "description": "Elgato Stream Deck plugin for controlling TP-Link Kasa and Tapo smart plugs",
   "main": "plugin.js",
   "scripts": {
@@ -48,6 +51,7 @@
     },
     "markdownlint-cli": {
       "js-yaml": "5.4.2",
+      "katex": "0.18.2",
       "minimatch": "11.0.3",
       "smol-toml": "1.9.1"
     },

@@ -1,0 +1,21 @@
+{
+  "allowedHosts": [
+    "registry.npmjs.org",
+    "github.com",
+    "api.github.com",
+    "codeload.github.com",
+    "objects.githubusercontent.com",
+    "*.tplink.com",
+    "*.tplinkcloud.com",
+    "*.tapo.com",
+    "cloud.tplink.com",
+    "cloud.tplinkcloud.com",
+    "api.tplink.com",
+    "cloudapi.tplinkcloud.com",
+    "www.tplink.com",
+    "www.tapo.com"
+  ],
+  "dns": {
+    "mode": "synthetic"
+  }
+}
