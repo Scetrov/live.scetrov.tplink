@@ -34,13 +34,13 @@
     "axios": "^1.21.1",
     "macaddr": "^0.1.1",
     "tplink-smarthome-api": "^5.0.0",
-    "ws": "^8.22.2"
+    "ws": "^8.23.0"
   },
   "devDependencies": {
     "fast-check": "4.10.2",
     "jest": "^30.5.2",
     "markdownlint-cli": "^0.50.0",
-    "prettier": "^3.9.10"
+    "prettier": "^3.10.1"
   },
   "overrides": {
     "@istanbuljs/load-nyc-config": {
